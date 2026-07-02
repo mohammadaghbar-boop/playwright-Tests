@@ -6,9 +6,13 @@ test.describe('Services List - Date Range Filter', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(SERVICES_URL);
     await page.waitForLoadState('networkidle');
-  });
+  }); 
 
   test('JF-TC-2827-A - Date range inputs are visible', async ({ page }) => {
+    await expect(page.locator('input[placeholder="سنة-شهر-يوم"]').first()).toBeVisible();
+    await expect(page.locator('input[placeholder="سنة-شهر-يوم"]').last()).toBeVisible();
+  });
+    test('JF-TC-2827-A - Date range inputs are visible', async ({ page }) => {
     await expect(page.locator('input[placeholder="سنة-شهر-يوم"]').first()).toBeVisible();
     await expect(page.locator('input[placeholder="سنة-شهر-يوم"]').last()).toBeVisible();
   });
