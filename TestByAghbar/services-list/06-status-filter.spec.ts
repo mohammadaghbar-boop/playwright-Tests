@@ -13,17 +13,19 @@ test.describe('Services List - Status Filter', () => {
   });
 
   // JF-TC-2828
+  // PrimeNG dropdown renders its panel in a portal overlay outside the component tree
   test('JF-TC-2828-B - Status dropdown shows مفعل not نشط', async ({ page }) => {
     await page.locator('text=كل الحالات').click();
-    await page.waitForTimeout(500);
-    await expect(page.locator('text=مفعل')).toBeVisible();
-    await expect(page.locator('text=نشط')).not.toBeVisible();
+    // Wait for PrimeNG overlay panel to open
+    await page.locator('.p-select-overlay, .p-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await expect(page.locator('.p-select-overlay li, .p-dropdown-panel li').getByText('مفعل', { exact: false })).toBeVisible();
+    await expect(page.locator('.p-select-overlay li, .p-dropdown-panel li').getByText('نشط', { exact: true })).not.toBeVisible();
   });
 
   test('JF-TC-2828-C - Selecting مفعل filters the list', async ({ page }) => {
     await page.locator('text=كل الحالات').click();
-    await page.waitForTimeout(500);
-    await page.locator('text=مفعل').click();
+    await page.locator('.p-select-overlay, .p-dropdown-panel').waitFor({ state: 'visible', timeout: 5000 });
+    await page.locator('.p-select-overlay li, .p-dropdown-panel li').getByText('مفعل', { exact: false }).click();
     await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/service-providers\/services/);
   });

@@ -18,13 +18,14 @@ test.describe('Services List - Date Range Filter', () => {
     await page.locator('input[placeholder="سنة-شهر-يوم"]').first().fill('2026-06-18');
     await page.locator('input[placeholder="سنة-شهر-يوم"]').last().fill('2026-06-09');
     await page.waitForTimeout(1000);
-    await expect(page.locator('text=يجب أن يكون تاريخ')).toBeVisible();
+    // Use partial text match — validation message contains "يجب أن يكون تاريخ"
+    await expect(page.getByText('يجب أن يكون تاريخ', { exact: false })).toBeVisible();
   });
 
   test('JF-TC-2827-C - Valid date range does not show validation error', async ({ page }) => {
     await page.locator('input[placeholder="سنة-شهر-يوم"]').first().fill('2026-06-01');
     await page.locator('input[placeholder="سنة-شهر-يوم"]').last().fill('2026-06-30');
     await page.waitForTimeout(1000);
-    await expect(page.locator('text=يجب أن يكون تاريخ')).not.toBeVisible();
+    await expect(page.getByText('يجب أن يكون تاريخ', { exact: false })).not.toBeVisible();
   });
 });

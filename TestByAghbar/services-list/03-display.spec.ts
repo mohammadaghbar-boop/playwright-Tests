@@ -6,6 +6,8 @@ test.describe('Services List - Display & Columns', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(SERVICES_URL);
     await page.waitForLoadState('networkidle');
+    // Wait for the table header row to be present before asserting columns
+    await page.locator('table thead tr').waitFor({ state: 'visible', timeout: 15000 });
   });
 
   // JF-TC-2821
