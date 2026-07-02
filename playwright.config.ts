@@ -14,32 +14,41 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   timeout: 60000,
-  testDir: './tests',
-  /* Run tests in files in parallel */
+  testDir: './TestByAghbar',
   fullyParallel: true,
- 
+  workers: 1,
   reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  use: {  video: 'retain-on-failure',
-
-    /* Base URL to use in actions like `await page.goto('')`. */
-    // baseURL: 'http://localhost:3000',
-
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+  use: {
+    video: 'retain-on-failure',
     trace: 'on-first-retry',
   },
 
-  /* Configure projects for major browsers */
   projects: [
+    // 1. Auth setup — runs once, saves session to .auth/user.json
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },{
-      name: 'Microsoft Edge',
+      name: 'setup',
+      testMatch: '**/auth.setup.ts',
+      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    },
+
+    // 2. Login spec — does NOT reuse saved auth (tests the login flow itself)
+    {
+      name: 'login-tests',
+      testMatch: '**/services-list/01-login.spec.ts',
+      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    },
+
+    // 3. All other services-list specs — reuse saved auth from setup
+    {
+      name: 'services-list',
+      testMatch: '**/services-list/0[2-9]-*.spec.ts',
+      dependencies: ['setup'],
       use: {
         ...devices['Desktop Edge'],
         channel: 'msedge',
-      }},
+        storageState: 'TestByAghbar/.auth/user.json',
+      },
+    },
 
   
 
