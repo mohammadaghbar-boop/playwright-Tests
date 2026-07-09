@@ -24,29 +24,60 @@ export default defineConfig({
   },
 
   projects: [
-    // 1. Auth setup — runs once, saves session to .auth/user.json
+    // ── Service-provider portal ──────────────────────────────────────────────
+    // 1. SP auth setup — logs in as Mohammed ALGHAMDI (service provider)
     {
       name: 'setup',
       testMatch: '**/auth.setup.ts',
       use: { ...devices['Desktop Edge'], channel: 'msedge' },
     },
 
-    // 2. Login spec — does NOT reuse saved auth (tests the login flow itself)
+    // 2. Login specs — no storageState (test the login flow itself)
     {
       name: 'login-tests',
-      testMatch: '**/services-list/01-login.spec.ts',
+      testMatch: '**/JF-*/01-login.spec.ts',
       use: { ...devices['Desktop Edge'], channel: 'msedge' },
     },
 
-    // 3. All other services-list specs — reuse saved auth from setup
+    // 3. SP feature specs — reuse SP storageState
+    //    Covers every JF-XXX-story-name/ subfolder automatically
+    //    Excludes JF-167 (heir portal — different storageState)
     {
-      name: 'services-list',
-      testMatch: '**/services-list/0[2-9]-*.spec.ts',
+      name: 'e2e',
+      testMatch: ['**/JF-*/0[2-9]-*.spec.ts', '**/JF-*/[1-9][0-9]-*.spec.ts'],
+      testIgnore: '**/JF-167-*/**',
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Edge'],
         channel: 'msedge',
         storageState: 'TestByAghbar/.auth/user.json',
+      },
+    },
+
+    // ── Heir portal (JF-167) ─────────────────────────────────────────────────
+    // 4. Heir auth setup — logs in as heir via Nafath mock users
+    {
+      name: 'heir-setup',
+      testMatch: '**/heir-auth.setup.ts',
+      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    },
+
+    // 5. Heir login spec — no storageState
+    {
+      name: 'heir-login-tests',
+      testMatch: '**/JF-167-*/01-*.spec.ts',
+      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    },
+
+    // 6. Heir feature specs — reuse heir storageState
+    {
+      name: 'heirs-e2e',
+      testMatch: ['**/JF-167-*/0[2-9]-*.spec.ts', '**/JF-167-*/[1-9][0-9]-*.spec.ts'],
+      dependencies: ['heir-setup'],
+      use: {
+        ...devices['Desktop Edge'],
+        channel: 'msedge',
+        storageState: 'TestByAghbar/.auth/heir.json',
       },
     },
 
