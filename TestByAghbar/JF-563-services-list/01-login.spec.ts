@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test';
 
+// Each login test must start with a completely clean browser state
+// so Keycloak doesn't skip the mock-user flow due to an active session
+test.use({ storageState: { cookies: [], origins: [] } });
+
 const BASE_URL = 'https://d-infath-jf-portal.azm-cit.com';
 
 test.describe('Login Flow', () => {

@@ -6,6 +6,8 @@ test.describe('Services List - License Number Search', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(SERVICES_URL);
     await page.waitForLoadState('networkidle');
+    // Wait for table to be ready before interacting with filters
+    await page.locator('table').waitFor({ state: 'visible', timeout: 15000 });
   });
 
   // JF-TC-2825
@@ -16,7 +18,9 @@ test.describe('Services List - License Number Search', () => {
   test('JF-TC-2825-B - Partial license number search returns results', async ({ page }) => {
     await page.getByPlaceholder('ابحث برقم الترخيص').fill('123');
     await page.waitForLoadState('networkidle');
+    // Wait for at least one row to appear after search
     const rows = page.locator('table tbody tr');
+    await expect(rows.first()).toBeVisible({ timeout: 10000 });
     await expect(rows).not.toHaveCount(0);
   });
 
@@ -26,6 +30,7 @@ test.describe('Services List - License Number Search', () => {
     await page.getByPlaceholder('ابحث برقم الترخيص').clear();
     await page.waitForLoadState('networkidle');
     const rows = page.locator('table tbody tr');
+    await expect(rows.first()).toBeVisible({ timeout: 10000 });
     await expect(rows).not.toHaveCount(0);
   });
 
