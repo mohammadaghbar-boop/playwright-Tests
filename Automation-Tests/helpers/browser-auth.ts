@@ -2,7 +2,7 @@
  * browser-auth.ts — zero-manual-steps auth for CloudBeaver and Estate Manager.
  *
  * CloudBeaver strategy (in order):
- *  1. Try service account (jf157test / Jf157Test@123) — works after first bootstrap
+ *  1. Try service account (CB_SVC_USER / CB_SVC_PASS from .env) — works after first bootstrap
  *  2. Try CB_ADMIN_USER / CB_ADMIN_PASS from .env — admin credentials to bootstrap
  *  3. Try CB_SESSION_ID from .env — browser session cookie as last resort
  *
@@ -16,8 +16,10 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const CB_HOST  = 'd-infath-db.azm-cit.com';
-const SVC_USER = 'jf157test';
-const SVC_PASS = 'Jf157Test@123';
+// Service-account creds from environment (.env, gitignored). CB_SVC_USER defaults to the
+// well-known account name; CB_SVC_PASS has no in-source fallback — set it in .env.
+const SVC_USER = process.env.CB_SVC_USER ?? 'jf157test';
+const SVC_PASS = process.env.CB_SVC_PASS ?? '';
 const agent    = new https.Agent({ rejectUnauthorized: false });
 
 let _emToken: string | null = null;
