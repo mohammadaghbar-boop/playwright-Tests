@@ -8,6 +8,7 @@ node_modules/
 /playwright/.cache/
 /playwright/.auth/
 /.auth/
+TestByAghbar/.auth/
 
 # Environment / secrets — never commit real credentials
 .env

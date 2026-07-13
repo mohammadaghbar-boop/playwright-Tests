@@ -25,10 +25,18 @@ export default defineConfig({
      testDir's default full-repo scan, so this does NOT sweep into
      azm-joint-fund-portal/ or azm-joint-fund-backend/ (each has its own,
      incompatible test setup — Angular Karma specs + a different Playwright
-     e2e/ fixture set). */
+     e2e/ fixture set). NOTE: the projects below that target TestByAghbar/ each
+     set their own `testDir` override for the same reason — otherwise their
+     broad `**/auth.setup.ts`-style patterns would also match unrelated files
+     like azm-joint-fund-portal/e2e/auth.setup.ts once the global testDir widens
+     to the repo root. */
   testMatch: ['tests/**/*.spec.ts', 'Automation-Tests/**/*.spec.ts'],
   /* Run tests in files in parallel */
   fullyParallel: true,
+  // Preserved from the TestByAghbar suite's own config — some of its specs hit the
+  // Nafath mock's "active login request already exists" error under concurrency.
+  // CLI runs that pass --workers explicitly (e.g. Automation-Tests specs) override this.
+  workers: 1,
 
   /* Logs in as each role once and caches auth state to .auth/ so specs that
      need a logged-in session don't each pay for their own Nafath login. */
@@ -39,31 +47,87 @@ export default defineConfig({
   globalTeardown: './Automation-Tests/global-teardown.ts',
 
   reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  use: {  video: 'retain-on-failure',
-
-    /* Base URL to use in actions like `await page.goto('')`. */
-    // baseURL: 'http://localhost:3000',
-
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+  use: {
+    video: 'retain-on-failure',
     trace: 'on-first-retry',
   },
 
-  /* Configure projects for major browsers */
   projects: [
+    // ── Service-provider portal ──────────────────────────────────────────────
+    // 1. SP auth setup — logs in as Mohammed ALGHAMDI (service provider)
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },{
-      name: 'Microsoft Edge',
+      name: 'setup',
+      testDir: './TestByAghbar',
+      testMatch: '**/auth.setup.ts',
+      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    },
+
+    // 2. Login specs — no storageState (test the login flow itself)
+    {
+      name: 'login-tests',
+      testDir: './TestByAghbar',
+      testMatch: '**/JF-*/01-login.spec.ts',
+      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    },
+
+    // 3. SP feature specs — reuse SP storageState
+    //    Covers every JF-XXX-story-name/ subfolder automatically
+    //    Excludes JF-167 (heir portal — different storageState)
+    {
+      name: 'e2e',
+      testDir: './TestByAghbar',
+      testMatch: ['**/JF-*/0[2-9]-*.spec.ts', '**/JF-*/[1-9][0-9]-*.spec.ts'],
+      testIgnore: '**/JF-167-*/**',
+      dependencies: ['setup'],
       use: {
         ...devices['Desktop Edge'],
         channel: 'msedge',
-      }},
+        storageState: 'TestByAghbar/.auth/user.json',
+      },
+    },
 
-  
+    // ── Heir portal (JF-167) ─────────────────────────────────────────────────
+    // 4. Heir auth setup — logs in as heir via Nafath mock users
+    {
+      name: 'heir-setup',
+      testDir: './TestByAghbar',
+      testMatch: '**/heir-auth.setup.ts',
+      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    },
 
-    
+    // 5. Heir login spec — no storageState
+    {
+      name: 'heir-login-tests',
+      testDir: './TestByAghbar',
+      testMatch: '**/JF-167-*/01-*.spec.ts',
+      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    },
+
+    // 6. Heir feature specs — reuse heir storageState
+    {
+      name: 'heirs-e2e',
+      testDir: './TestByAghbar',
+      testMatch: ['**/JF-167-*/0[2-9]-*.spec.ts', '**/JF-167-*/[1-9][0-9]-*.spec.ts'],
+      dependencies: ['heir-setup'],
+      use: {
+        ...devices['Desktop Edge'],
+        channel: 'msedge',
+        storageState: 'TestByAghbar/.auth/heir.json',
+      },
+    },
+
+    // ── Automation-Tests/ suite (JF-171, jf157, jf575, etc.) ─────────────────
+    // No per-project testDir/testMatch override — these rely on the global
+    // testDir/testMatch above, and are normally run against an explicit file
+    // path (e.g. `playwright test Automation-Tests/foo.spec.ts --project=chromium`).
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'Microsoft Edge',
+      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    },
 
     /* Test against mobile viewports. */
     // {
