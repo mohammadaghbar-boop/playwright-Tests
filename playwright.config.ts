@@ -27,7 +27,7 @@ export default defineConfig({
      incompatible test setup — Angular Karma specs + a different Playwright
      e2e/ fixture set). NOTE: the projects below that target TestByAghbar/ each
      set their own `testDir` override for the same reason — otherwise their
-     broad `**/auth.setup.ts`-style patterns would also match unrelated files
+     broad auth.setup.ts glob patterns would also match unrelated files
      like azm-joint-fund-portal/e2e/auth.setup.ts once the global testDir widens
      to the repo root. */
   testMatch: ['tests/**/*.spec.ts', 'Automation-Tests/**/*.spec.ts'],
