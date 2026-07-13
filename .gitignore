@@ -14,3 +14,9 @@ TestByAghbar/.auth/
 .env
 .env.*
 !.env.example
+
+# Debug artifacts — screenshots/diagnostics captured during exploration, never committed
+*.png
+Automation-Tests/debug-*
+Automation-Tests/diag-*
+Automation-Tests/diagnose-*
