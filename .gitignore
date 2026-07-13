@@ -3,7 +3,14 @@
 node_modules/
 /test-results/
 /playwright-report/
+/playwright-report-jf575/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+/.auth/
 TestByAghbar/.auth/
+
+# Environment / secrets — never commit real credentials
+.env
+.env.*
+!.env.example
