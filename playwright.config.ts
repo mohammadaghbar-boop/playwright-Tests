@@ -3,10 +3,14 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
+ *
+ * Populates DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD (see .env.example) for
+ * Automation-Tests/utils/db-client.ts. Silently no-ops if .env doesn't exist
+ * (e.g. CI providing real env vars directly) — dotenv.config() never throws.
  */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -14,10 +18,26 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   timeout: 60000,
-  testDir: './tests',
+  testDir: '.',
+  /* Previously testDir: './tests', which silently excluded Automation-Tests/ from
+     every default/explicit-path invocation (Playwright scopes file discovery AND
+     CLI path arguments to testDir). Scoped via testMatch instead of widening
+     testDir's default full-repo scan, so this does NOT sweep into
+     azm-joint-fund-portal/ or azm-joint-fund-backend/ (each has its own,
+     incompatible test setup — Angular Karma specs + a different Playwright
+     e2e/ fixture set). */
+  testMatch: ['tests/**/*.spec.ts', 'Automation-Tests/**/*.spec.ts'],
   /* Run tests in files in parallel */
   fullyParallel: true,
- 
+
+  /* Logs in as each role once and caches auth state to .auth/ so specs that
+     need a logged-in session don't each pay for their own Nafath login. */
+  globalSetup: './Automation-Tests/global-setup.ts',
+
+  /* Closes the shared DB pool (Automation-Tests/utils/db-client.ts) once the
+     whole run finishes, so DB-asserting specs don't leak open connections. */
+  globalTeardown: './Automation-Tests/global-teardown.ts',
+
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {  video: 'retain-on-failure',
