@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "playwright test",
+    "test:list": "playwright test --list",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -12,6 +19,11 @@
     "@playwright/test": "^1.58.2",
     "@types/node": "^25.5.0",
     "dotenv": "^17.4.2",
-    "node-sql-parser": "^4.18.0"
+    "eslint": "^9.17.0",
+    "eslint-plugin-playwright": "^2.1.0",
+    "node-sql-parser": "^4.18.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.19.0"
   }
 }
