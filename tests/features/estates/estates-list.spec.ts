@@ -1,16 +1,13 @@
-import { test, expect, Page, Response } from '@playwright/test';
+// Feature: Estates list (JF-22)
+import { test, expect, type Page, type Response, type Locator } from '@playwright/test';
+import { login, DEFAULT_USER, JUDGE_USER } from '../../support/auth';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// This repo does not set a global baseURL in playwright.config.ts (sibling UI
-// specs use absolute URLs), so navigations here are built from BASE_URL. Override
-// via the BASE_URL env var; defaults to the CIT/Dev portal like the README does.
-const BASE_URL = process.env.BASE_URL ?? 'https://d-infath-jf-portal.azm-cit.com';
-
 const ESTATES_PATH = '/court-cases';
 
-const USER        = { email: 'demo-liquidator@azm.sa', password: 'Azm@123' };
-const UNAUTH_USER = { email: 'demo-judge@azm.sa',      password: 'Azm@123' };
+const USER = DEFAULT_USER;
+const UNAUTH_USER = JUDGE_USER;
 
 const EXPECTED_COLUMNS = [
   'رقم التركة',
@@ -28,10 +25,8 @@ const EXPECTED_COLUMNS = [
 /**
  * Recursively unwraps common API envelope shapes to return the first non-empty
  * array found. Handles: [], {data:[]}, {items:[]}, {data:{records:[]}}, etc.
- * Returns `any` (not `any[] | null`) so callers can chain `.length`/indexing
- * after an `expect(...).not.toBeNull()` guard without TS strict-null noise.
  */
-function extractItems(body: any): any {
+function extractItems(body: any): any[] | null {
   if (Array.isArray(body) && body.length > 0) return body;
   if (!body || typeof body !== 'object') return null;
   const keys = ['data', 'items', 'results', 'records', 'list', 'content', 'payload'];
@@ -47,14 +42,7 @@ function extractItems(body: any): any {
   return null;
 }
 
-/** Log in and wait for dashboard redirect. */
-async function login(page: Page, credentials = USER): Promise<void> {
-  await page.goto(`${BASE_URL}/login`);
-  await page.getByRole('textbox', { name: 'البريد الإلكتروني' }).fill(credentials.email);
-  await page.getByRole('textbox', { name: 'كلمة المرور' }).fill(credentials.password);
-  await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
-  await page.waitForURL('**/dashboard');
-}
+// login() is now shared from ../../support/auth
 
 /**
  * Register a JSON response interceptor. MUST be called BEFORE the action that
@@ -66,7 +54,7 @@ function interceptNextJsonResponse(page: Page, timeout = 15000): Promise<Respons
       (r.headers()['content-type'] ?? '').includes('application/json') &&
       !r.url().match(/\.(js|css|png|jpg|svg|ico|woff2?|ttf|map)(\?|$)/) &&
       !r.url().includes('/assets/'),
-    { timeout }
+    { timeout },
   );
 }
 
@@ -82,7 +70,7 @@ async function waitForData(page: Page): Promise<void> {
 }
 
 /** Main search input (identified by Arabic placeholder). */
-const searchInput = (page: Page) => page.locator('input[placeholder*="رقم"]').first();
+const searchInput = (page: Page): Locator => page.locator('input[placeholder*="رقم"]').first();
 
 /**
  * Click the PrimeNG filter-panel toggle button (button[title="تصفية"]).
@@ -106,7 +94,7 @@ async function openFilterPanel(page: Page): Promise<boolean> {
 async function clickPSelectOption(page: Page, labelText: string, targetIndex = 1): Promise<string | null> {
   const container = page.locator('label').filter({ hasText: labelText }).locator('..');
   const pSelect = container.locator('p-select');
-  if (!await pSelect.isVisible({ timeout: 3000 }).catch(() => false)) return null;
+  if (!(await pSelect.isVisible({ timeout: 3000 }).catch(() => false))) return null;
 
   await pSelect.click();
   const panel = page.locator('[data-pc-section="panel"]');
@@ -114,11 +102,14 @@ async function clickPSelectOption(page: Page, labelText: string, targetIndex = 1
 
   // Try data-pc-section="option" first; fall back to li[role="option"] then any li
   let options = panel.locator('[data-pc-section="option"]');
-  if (await options.count() === 0) options = panel.locator('li[role="option"]');
-  if (await options.count() === 0) options = panel.locator('li');
+  if ((await options.count()) === 0) options = panel.locator('li[role="option"]');
+  if ((await options.count()) === 0) options = panel.locator('li');
 
   const count = await options.count();
-  if (count === 0) { await page.keyboard.press('Escape'); return null; }
+  if (count === 0) {
+    await page.keyboard.press('Escape');
+    return null;
+  }
 
   const idx = Math.min(targetIndex, count - 1);
   const text = (await options.nth(idx).innerText()).trim();
@@ -129,10 +120,9 @@ async function clickPSelectOption(page: Page, labelText: string, targetIndex = 1
 // ─── Test Suite ───────────────────────────────────────────────────────────────
 
 test.describe('JF-22 — Estates List Page', () => {
-
   test.beforeEach(async ({ page }) => {
     await login(page);
-    await page.goto(`${BASE_URL}${ESTATES_PATH}`);
+    await page.goto(ESTATES_PATH);
     await waitForLoad(page);
 
     // Clear any search state that persisted from the previous test
@@ -143,7 +133,7 @@ test.describe('JF-22 — Estates List Page', () => {
         const responsePromise = interceptNextJsonResponse(page);
         await input.clear();
         await input.press('Enter');
-        await responsePromise.catch(() => {});
+        await responsePromise.catch(() => undefined);
         await waitForLoad(page);
       }
     }
@@ -164,9 +154,7 @@ test.describe('JF-22 — Estates List Page', () => {
   test('2. should display all 8 required column headers', async ({ page }) => {
     await expect(page.locator('table thead tr')).toBeVisible();
     for (const column of EXPECTED_COLUMNS) {
-      await expect(
-        page.locator('table thead').getByText(column, { exact: false })
-      ).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('table thead').getByText(column, { exact: false })).toBeVisible({ timeout: 10000 });
     }
   });
 
@@ -181,9 +169,9 @@ test.describe('JF-22 — Estates List Page', () => {
   // ─────────────────────────────────────────────────────────────────────────
 
   test('4. should search by existing estate number and return matching result', async ({ page }) => {
-    const firstRow  = page.locator('table tbody tr').first();
+    const firstRow = page.locator('table tbody tr').first();
     const estateNum = (await firstRow.locator('td').first().innerText()).trim();
-    const input     = searchInput(page);
+    const input = searchInput(page);
 
     const responsePromise = interceptNextJsonResponse(page);
     await input.fill(estateNum);
@@ -193,21 +181,19 @@ test.describe('JF-22 — Estates List Page', () => {
 
     expect(response.status()).toBe(200);
 
-    const body  = await response.json();
+    const body = await response.json();
     const items = extractItems(body);
     expect(items).not.toBeNull();
-    expect(items.length).toBeGreaterThanOrEqual(1);
+    expect(items!.length).toBeGreaterThanOrEqual(1);
 
     const requestUrl = response.url();
     const hasParam = requestUrl.includes(estateNum) || requestUrl.includes(encodeURIComponent(estateNum));
     expect(hasParam).toBeTruthy();
 
-    await expect(
-      page.locator('table tbody').getByText(estateNum, { exact: false })
-    ).toBeVisible();
+    await expect(page.locator('table tbody').getByText(estateNum, { exact: false })).toBeVisible();
 
     const renderedRows = await page.locator('table tbody tr').count();
-    expect(renderedRows).toBeLessThanOrEqual(items.length + 1);
+    expect(renderedRows).toBeLessThanOrEqual(items!.length + 1);
   });
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -220,7 +206,7 @@ test.describe('JF-22 — Estates List Page', () => {
     const dateInput = page.locator('input.p-datepicker-input');
     expect(
       await dateInput.isVisible({ timeout: 3000 }).catch(() => false),
-      'Date input (input.p-datepicker-input) not visible after opening filter panel'
+      'Date input (input.p-datepicker-input) not visible after opening filter panel',
     ).toBeTruthy();
 
     const responsePromise = interceptNextJsonResponse(page);
@@ -238,21 +224,15 @@ test.describe('JF-22 — Estates List Page', () => {
   // ─────────────────────────────────────────────────────────────────────────
 
   test('6. should filter by رقم التركة field in filter panel and show matching result', async ({ page }) => {
-    const firstRow  = page.locator('table tbody tr').first();
+    const firstRow = page.locator('table tbody tr').first();
     const estateNum = (await firstRow.locator('td').first().innerText()).trim();
 
     const panelOpened = await openFilterPanel(page);
     expect(panelOpened).toBeTruthy();
     await waitForLoad(page);
 
-    const estateInput = page.locator('label')
-      .filter({ hasText: 'رقم التركة' })
-      .locator('..')
-      .locator('input[type="text"]');
-    expect(
-      await estateInput.isVisible({ timeout: 3000 }).catch(() => false),
-      'رقم التركة text input not visible in filter panel'
-    ).toBeTruthy();
+    const estateInput = page.locator('label').filter({ hasText: 'رقم التركة' }).locator('..').locator('input[type="text"]');
+    expect(await estateInput.isVisible({ timeout: 3000 }).catch(() => false), 'رقم التركة text input not visible in filter panel').toBeTruthy();
 
     const responsePromise = interceptNextJsonResponse(page);
     await estateInput.fill(estateNum);
@@ -273,14 +253,8 @@ test.describe('JF-22 — Estates List Page', () => {
     expect(panelOpened).toBeTruthy();
     await waitForLoad(page);
 
-    const assetInput = page.locator('label')
-      .filter({ hasText: 'عدد الأصول' })
-      .locator('..')
-      .locator('input[type="number"]');
-    expect(
-      await assetInput.isVisible({ timeout: 3000 }).catch(() => false),
-      'عدد الأصول number input not visible in filter panel'
-    ).toBeTruthy();
+    const assetInput = page.locator('label').filter({ hasText: 'عدد الأصول' }).locator('..').locator('input[type="number"]');
+    expect(await assetInput.isVisible({ timeout: 3000 }).catch(() => false), 'عدد الأصول number input not visible in filter panel').toBeTruthy();
 
     const responsePromise = interceptNextJsonResponse(page);
     await assetInput.fill('2');
@@ -303,15 +277,16 @@ test.describe('JF-22 — Estates List Page', () => {
 
     const statusContainer = page.locator('label').filter({ hasText: 'الحالة' }).locator('..');
     const statusSelect = statusContainer.locator('p-select');
-    expect(
-      await statusSelect.isVisible({ timeout: 3000 }).catch(() => false),
-      'p-select for الحالة not visible in filter panel'
-    ).toBeTruthy();
+    expect(await statusSelect.isVisible({ timeout: 3000 }).catch(() => false), 'p-select for الحالة not visible in filter panel').toBeTruthy();
 
     // Open dropdown — wait for the SECOND option specifically (handles async loading)
     await statusSelect.click();
-    const hasSecond = await page.locator('[role="option"]').nth(1)
-      .waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false);
+    const hasSecond = await page
+      .locator('[role="option"]')
+      .nth(1)
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .then(() => true)
+      .catch(() => false);
 
     if (!hasSecond) {
       await page.keyboard.press('Escape');
@@ -321,7 +296,7 @@ test.describe('JF-22 — Estates List Page', () => {
 
     // Close and re-open with the interceptor registered BEFORE the click
     await page.keyboard.press('Escape');
-    await page.locator('[role="option"]').first().waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+    await page.locator('[role="option"]').first().waitFor({ state: 'hidden', timeout: 3000 }).catch(() => undefined);
 
     const responsePromise = interceptNextJsonResponse(page);
     await statusSelect.click();
@@ -338,7 +313,7 @@ test.describe('JF-22 — Estates List Page', () => {
 
   // ─────────────────────────────────────────────────────────────────────────
 
-  test('9. should filter by relation manager (مدير العلاقة) p-select dropdown', async ({ page }) => {
+  test('9. should filter by relation manager (مدير العلاقة) p-select dropdown', async () => {
     // The مدير العلاقة filter dropdown returns "No results found" from the backend API —
     // the options endpoint is empty even though manager names appear in table rows.
     test.skip(true, 'Pending development — Relationship Manager filter not yet implemented (see JF-22 dev comment). Remove this skip once the feature is shipped.');
@@ -346,7 +321,7 @@ test.describe('JF-22 — Estates List Page', () => {
 
   // ─────────────────────────────────────────────────────────────────────────
 
-  test('10. should filter by liquidator dropdown', async ({ page }) => {
+  test('10. should filter by liquidator dropdown', async () => {
     // The 5-column filter panel (التاريخ / رقم التركة / عدد الأصول / الحالة / مدير العلاقة)
     // does NOT include a liquidator (المصفي) filter.
     test.skip(true, 'Pending development — Liquidator filter not yet implemented (see JF-22 dev comment). Remove this skip once the feature is shipped.');
@@ -360,14 +335,18 @@ test.describe('JF-22 — Estates List Page', () => {
     await waitForLoad(page);
 
     // Collect all JSON responses while both filters are being applied
-    const responses: { status: number; body: any }[] = [];
+    const responses: Array<{ status: number; body: any }> = [];
     const listener = async (resp: Response) => {
       if (
         (resp.headers()['content-type'] ?? '').includes('application/json') &&
         !resp.url().match(/\.(js|css|png|jpg|svg|ico|woff2?|ttf|map)(\?|$)/) &&
         !resp.url().includes('/assets/')
       ) {
-        try { responses.push({ status: resp.status(), body: await resp.json() }); } catch { /* consumed */ }
+        try {
+          responses.push({ status: resp.status(), body: await resp.json() });
+        } catch {
+          /* consumed */
+        }
       }
     };
     page.on('response', listener);
@@ -381,10 +360,7 @@ test.describe('JF-22 — Estates List Page', () => {
     }
 
     // Filter 2: estate number (رقم التركة) in filter panel
-    const estateInput = page.locator('label')
-      .filter({ hasText: 'رقم التركة' })
-      .locator('..')
-      .locator('input[type="text"]');
+    const estateInput = page.locator('label').filter({ hasText: 'رقم التركة' }).locator('..').locator('input[type="text"]');
     if (await estateInput.isVisible({ timeout: 3000 }).catch(() => false)) {
       await estateInput.fill('INH');
       await estateInput.press('Tab');
@@ -399,10 +375,10 @@ test.describe('JF-22 — Estates List Page', () => {
     expect(dataResponse, 'No 200 response with data found after applying multiple filters').not.toBeUndefined();
 
     const items = extractItems(dataResponse!.body);
-    expect(items.length).toBeGreaterThan(0);
+    expect(items!.length).toBeGreaterThan(0);
 
     const renderedRows = await page.locator('table tbody tr').count();
-    expect(renderedRows).toBeLessThanOrEqual(items.length + 1);
+    expect(renderedRows).toBeLessThanOrEqual(items!.length + 1);
   });
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -414,23 +390,17 @@ test.describe('JF-22 — Estates List Page', () => {
     expect(assetColIndex, 'عدد الأصول column not found in table headers').toBeGreaterThanOrEqual(0);
 
     // Read the asset count from the first visible row to use as the filter value
-    const firstRow      = page.locator('table tbody tr').first();
+    const firstRow = page.locator('table tbody tr').first();
     const assetCellText = (await firstRow.locator('td').nth(assetColIndex).innerText()).trim();
-    const assetCellNum  = parseInt(assetCellText.replace(/[^0-9]/g, ''), 10);
-    const filterValue   = Number.isFinite(assetCellNum) && assetCellNum > 0 ? String(assetCellNum) : '1';
+    const assetCellNum = parseInt(assetCellText.replace(/[^0-9]/g, ''), 10);
+    const filterValue = Number.isFinite(assetCellNum) && assetCellNum > 0 ? String(assetCellNum) : '1';
 
     const panelOpened = await openFilterPanel(page);
     expect(panelOpened).toBeTruthy();
     await waitForLoad(page);
 
-    const assetInput = page.locator('label')
-      .filter({ hasText: 'عدد الأصول' })
-      .locator('..')
-      .locator('input[type="number"]');
-    expect(
-      await assetInput.isVisible({ timeout: 3000 }).catch(() => false),
-      'عدد الأصول number input not visible in filter panel'
-    ).toBeTruthy();
+    const assetInput = page.locator('label').filter({ hasText: 'عدد الأصول' }).locator('..').locator('input[type="number"]');
+    expect(await assetInput.isVisible({ timeout: 3000 }).catch(() => false), 'عدد الأصول number input not visible in filter panel').toBeTruthy();
 
     // Register interceptor BEFORE triggering the filter
     const responsePromise = interceptNextJsonResponse(page);
@@ -446,12 +416,12 @@ test.describe('JF-22 — Estates List Page', () => {
     const requestUrl = response.url();
     expect(
       requestUrl.includes(filterValue) || requestUrl.includes(encodeURIComponent(filterValue)),
-      `Expected asset count "${filterValue}" in request URL: ${requestUrl}`
+      `Expected asset count "${filterValue}" in request URL: ${requestUrl}`,
     ).toBeTruthy();
 
     // At least one row must be visible after filtering
     await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 10000 });
-    const rows     = page.locator('table tbody tr');
+    const rows = page.locator('table tbody tr');
     const rowCount = await rows.count();
     expect(rowCount).toBeGreaterThan(0);
 
@@ -460,11 +430,8 @@ test.describe('JF-22 — Estates List Page', () => {
     const expected = parseInt(filterValue, 10);
     for (let i = 0; i < rowCount; i++) {
       const cellText = (await rows.nth(i).locator('td').nth(assetColIndex).innerText()).trim();
-      const cellNum  = parseInt(cellText.replace(/[^0-9]/g, ''), 10);
-      expect(
-        Number.isFinite(cellNum),
-        `Row ${i + 1}: asset count cell "${cellText}" is not numeric`
-      ).toBeTruthy();
+      const cellNum = parseInt(cellText.replace(/[^0-9]/g, ''), 10);
+      expect(Number.isFinite(cellNum), `Row ${i + 1}: asset count cell "${cellText}" is not numeric`).toBeTruthy();
       expect(cellNum).toBeGreaterThanOrEqual(expected);
     }
   });
@@ -472,7 +439,7 @@ test.describe('JF-22 — Estates List Page', () => {
   // ─────────────────────────────────────────────────────────────────────────
 
   test('12. should open estate details when clicking عرض button', async ({ page }) => {
-    const firstRow  = page.locator('table tbody tr').first();
+    const firstRow = page.locator('table tbody tr').first();
     const estateNum = (await firstRow.locator('td').first().innerText()).trim();
 
     const viewButton = firstRow.getByRole('button', { name: 'عرض' });
@@ -489,15 +456,13 @@ test.describe('JF-22 — Estates List Page', () => {
 
     if (response) expect(response.status()).toBe(200);
 
-    await expect(
-      page.getByText(estateNum, { exact: false }).first()
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(estateNum, { exact: false }).first()).toBeVisible({ timeout: 10000 });
   });
 
   // ─────────────────────────────────────────────────────────────────────────
 
   test('13. should match API response data with rendered table rows', async ({ page }) => {
-    const capturedResponses: { url: string; body: any }[] = [];
+    const capturedResponses: Array<{ url: string; body: any }> = [];
     const listener = async (response: Response) => {
       const url = response.url();
       if (
@@ -508,7 +473,9 @@ test.describe('JF-22 — Estates List Page', () => {
       ) {
         try {
           capturedResponses.push({ url, body: await response.json() });
-        } catch { /* body already consumed */ }
+        } catch {
+          /* body already consumed */
+        }
       }
     };
 
@@ -517,17 +484,19 @@ test.describe('JF-22 — Estates List Page', () => {
     await waitForData(page);
     page.off('response', listener);
 
-    let apiItems: any = null;
+    let apiItems: any[] | null = null;
     for (const { body } of capturedResponses) {
       const extracted = extractItems(body);
-      if (extracted) { apiItems = extracted; break; }
+      if (extracted) {
+        apiItems = extracted;
+        break;
+      }
     }
 
     if (!apiItems) {
       test.skip(
         true,
-        `No estate list found among ${capturedResponses.length} captured response(s). ` +
-        'URLs: ' + capturedResponses.map((r) => r.url).join(', ')
+        `No estate list found among ${capturedResponses.length} captured response(s). URLs: ${capturedResponses.map((r) => r.url).join(', ')}`,
       );
       return;
     }
@@ -536,8 +505,13 @@ test.describe('JF-22 — Estates List Page', () => {
 
     const first = apiItems[0];
     const hasId = !!(
-      first.caseNumber ?? first.estateNumber ?? first.case_number ??
-      first.estate_number ?? first.fileNumber ?? first.number ?? first.id
+      first.caseNumber ??
+      first.estateNumber ??
+      first.case_number ??
+      first.estate_number ??
+      first.fileNumber ??
+      first.number ??
+      first.id
     );
     expect(hasId).toBeTruthy();
 
@@ -545,13 +519,10 @@ test.describe('JF-22 — Estates List Page', () => {
     expect(renderedRowCount).toBeLessThanOrEqual(apiItems.length + 1);
 
     const estateNumValue = String(
-      first.caseNumber ?? first.estateNumber ?? first.case_number ??
-      first.estate_number ?? first.fileNumber ?? first.number ?? first.id ?? ''
+      first.caseNumber ?? first.estateNumber ?? first.case_number ?? first.estate_number ?? first.fileNumber ?? first.number ?? first.id ?? '',
     );
     if (estateNumValue) {
-      const firstRowText = (
-        await page.locator('table tbody tr').first().locator('td').first().innerText()
-      ).trim();
+      const firstRowText = (await page.locator('table tbody tr').first().locator('td').first().innerText()).trim();
       expect(firstRowText).toContain(estateNumValue);
     }
   });
@@ -574,16 +545,16 @@ test.describe('JF-22 — Estates List Page', () => {
     const items = extractItems(await response.json());
     if (items !== null) expect(items.length).toBe(0);
 
-    const rows     = page.locator('table tbody tr');
+    const rows = page.locator('table tbody tr');
     const rowCount = await rows.count();
     if (rowCount > 0) {
       const bodyText = await page.locator('table tbody').innerText();
       expect(
         bodyText.includes('لا توجد بيانات') ||
-        bodyText.includes('لا توجد') ||
-        bodyText.includes('لا يوجد') ||
-        bodyText.includes('لا نتائج') ||
-        bodyText.trim() === ''
+          bodyText.includes('لا توجد') ||
+          bodyText.includes('لا يوجد') ||
+          bodyText.includes('لا نتائج') ||
+          bodyText.trim() === '',
       ).toBeTruthy();
     } else {
       expect(rowCount).toBe(0);
@@ -598,10 +569,7 @@ test.describe('JF-22 — Estates List Page', () => {
     await waitForLoad(page);
 
     const dateInput = page.locator('input.p-datepicker-input');
-    expect(
-      await dateInput.isVisible({ timeout: 3000 }).catch(() => false),
-      'Date input not visible after opening filter panel'
-    ).toBeTruthy();
+    expect(await dateInput.isVisible({ timeout: 3000 }).catch(() => false), 'Date input not visible after opening filter panel').toBeTruthy();
 
     // Enter non-date text — the PrimeNG datepicker should reject or clear it
     await dateInput.fill('NOT_A_DATE');
@@ -624,9 +592,12 @@ test.describe('JF-22 — Estates List Page', () => {
 
   test('16. should block access and not show estates for unauthorized user (demo-judge)', async ({ page }) => {
     await page.context().clearCookies();
-    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
 
-    await page.goto(`${BASE_URL}/login`);
+    await page.goto('/login');
     await page.getByRole('textbox', { name: 'البريد الإلكتروني' }).fill(UNAUTH_USER.email);
     await page.getByRole('textbox', { name: 'كلمة المرور' }).fill(UNAUTH_USER.password);
     await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
@@ -646,16 +617,16 @@ test.describe('JF-22 — Estates List Page', () => {
 
     // Scenario B: login succeeded — verify estates page is inaccessible
     const responsePromise = interceptNextJsonResponse(page, 20000);
-    await page.goto(`${BASE_URL}${ESTATES_PATH}`);
+    await page.goto(ESTATES_PATH);
     await page.waitForLoadState('networkidle');
     const response = await responsePromise.catch(() => null);
 
     const redirectedAway = !page.url().includes(ESTATES_PATH);
-    const accessDenied   = await page
+    const accessDenied = await page
       .getByText(/غير مصرح|محظور|ليس لديك صلاحية|403|401/i)
       .isVisible({ timeout: 3000 })
       .catch(() => false);
-    const apiBlocked  = response !== null && (response.status() === 401 || response.status() === 403);
+    const apiBlocked = response !== null && (response.status() === 401 || response.status() === 403);
     const noDataShown = (await page.locator('table tbody tr').count()) === 0;
 
     expect(redirectedAway || accessDenied || apiBlocked || noDataShown).toBeTruthy();
@@ -676,7 +647,7 @@ test.describe('JF-22 — Estates List Page', () => {
     const responsePromise = interceptNextJsonResponse(page);
     await input.fill('     ');
     await input.press('Enter');
-    await responsePromise.catch(() => {});
+    await responsePromise.catch(() => undefined);
     await waitForLoad(page);
 
     await expect(page.locator('table')).toBeVisible();
@@ -700,15 +671,11 @@ test.describe('JF-22 — Estates List Page', () => {
     await expect(page.locator('table')).toBeVisible();
 
     if (response.status() === 200) {
-      const rows     = page.locator('table tbody tr');
+      const rows = page.locator('table tbody tr');
       const rowCount = await rows.count();
       if (rowCount > 0) {
         const bodyText = await page.locator('table tbody').innerText();
-        expect(
-          bodyText.includes('لا توجد') ||
-          bodyText.includes('لا يوجد') ||
-          bodyText.trim() === ''
-        ).toBeTruthy();
+        expect(bodyText.includes('لا توجد') || bodyText.includes('لا يوجد') || bodyText.trim() === '').toBeTruthy();
       }
     }
   });
@@ -749,9 +716,7 @@ test.describe('JF-22 — Estates List Page', () => {
   test('20. should reset all filters and reload full list when reset button is clicked', async ({ page }) => {
     const input = searchInput(page);
 
-    const firstEstateNum = (
-      await page.locator('table tbody tr').first().locator('td').first().innerText()
-    ).trim();
+    const firstEstateNum = (await page.locator('table tbody tr').first().locator('td').first().innerText()).trim();
 
     const searchDone = interceptNextJsonResponse(page);
     await input.fill(firstEstateNum);
@@ -771,7 +736,7 @@ test.describe('JF-22 — Estates List Page', () => {
       await input.press('Enter');
     }
 
-    await resetDone.catch(() => {});
+    await resetDone.catch(() => undefined);
     await waitForLoad(page);
     // Explicitly wait for data rows to repopulate before counting
     await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 15000 });
