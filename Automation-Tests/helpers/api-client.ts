@@ -12,6 +12,12 @@ let _emToken: string | null = null;
 
 export async function getEstateManagerToken(): Promise<string> {
   if (_emToken) return _emToken;
+  // Allow a pre-supplied token via env (previously only browser-auth.ts honoured this;
+  // kept here so the two now-unified callers behave identically).
+  if (process.env.ESTATE_MANAGER_TOKEN) {
+    _emToken = process.env.ESTATE_MANAGER_TOKEN;
+    return _emToken;
+  }
   const ctx = await playwrightRequest.newContext({ ignoreHTTPSErrors: true });
   const res = await ctx.post(`${BASE}/users/api/v1/auth/login`, {
     headers: { 'TenantIdentifier': TENANT, 'Content-Type': 'application/json', 'Accept-Language': 'ar-SA' },

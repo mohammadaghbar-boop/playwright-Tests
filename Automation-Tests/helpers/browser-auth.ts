@@ -20,7 +20,6 @@ const SVC_USER = 'jf157test';
 const SVC_PASS = 'Jf157Test@123';
 const agent    = new https.Agent({ rejectUnauthorized: false });
 
-let _emToken: string | null = null;
 let _cbSession: string | null = null;
 
 // ── HTTP helper ────────────────────────────────────────────────────────────
@@ -171,32 +170,9 @@ export async function getCloudBeaverSession(): Promise<string> {
 }
 
 // ── Public: Estate Manager token ──────────────────────────────────────────
-
-export async function getEstateManagerToken(): Promise<string> {
-  if (_emToken) return _emToken;
-
-  // Try env first
-  if (process.env.ESTATE_MANAGER_TOKEN) {
-    _emToken = process.env.ESTATE_MANAGER_TOKEN;
-    return _emToken;
-  }
-
-  // Login via API (Azm@123 works for demo-estate-manager@azm.sa on the local provider)
-  const { request } = await import('@playwright/test');
-  const BASE = process.env.BASE_API_URL ?? 'https://d-infath-jf-api.azm-cit.com';
-  const ctx = await request.newContext({ ignoreHTTPSErrors: true });
-  const res = await ctx.post(`${BASE}/users/api/v1/auth/login`, {
-    headers: { 'TenantIdentifier': process.env.TENANT_ID ?? 'azm-tenant-12345', 'Content-Type': 'application/json', 'Accept-Language': 'ar-SA' },
-    data: { Email: process.env.ESTATE_MANAGER_EMAIL ?? 'demo-estate-manager@azm.sa', Password: process.env.ESTATE_MANAGER_PASSWORD ?? 'Azm@123' },
-  });
-  const body = JSON.parse(await res.text());
-  const token = body?.data?.accessToken ?? '';
-  await ctx.dispose();
-
-  if (!token) throw new Error(`Estate Manager login failed: ${JSON.stringify(body).substring(0, 200)}`);
-  console.log('[browser-auth] OK Estate Manager token obtained');
-  _emToken = token;
-  return token;
-}
+// Deduplicated: the canonical implementation now lives in api-client.ts (it already
+// existed there, near-identically). Re-exported here so existing importers of this
+// module keep working unchanged. See helpers/CONSOLIDATION.md.
+export { getEstateManagerToken } from './api-client';
 
 export async function closeBrowser() { /* no browser to close */ }
