@@ -1,0 +1,35 @@
+---
+name: stlc-gap-analysis
+description: Do a gap analysis on a user story from its Jira details, linked issues, and comments; then DRAFT a gap-summary comment for review before it is posted.
+when_to_use: "gap analysis for JF-123", analyze a story, find gaps in a user story
+argument-hint: "[JF-XXX]"
+arguments: [story]
+allowed-tools: Read, Write, Grep
+---
+
+## Gap analysis for $story
+
+### 1. Gather everything about the story
+Use the Atlassian (Jira) MCP tools to fetch the full picture of **$story**:
+- The issue itself (description, acceptance criteria, status, fields).
+- **All linked issues** (blocks, relates to, epics, sub-tasks) — fetch their details too.
+- **All comments** on the story and relevant linked issues.
+
+If any tool isn't available/authorized, say so and ask the user to enable it — don't guess.
+
+### 2. Analyse for gaps
+Identify the **real gaps** — be concrete and evidence-based:
+- Acceptance criteria that are ambiguous, missing, contradictory, or untestable.
+- Behaviour implied by comments/linked tickets but absent from the story.
+- Missing edge/negative-case definition, unclear data/permission rules, undefined error
+  handling, or dependencies on unfinished work.
+- Distinguish **product gaps** (feature unclear/incomplete) from **coverage gaps**
+  (things we must be sure to test).
+
+### 3. Draft the gap comment (do NOT post yet)
+Write a clear, professional Jira comment summarizing the real gaps to
+`qa-artifacts/$story/01-gap-comment.md`. Then show it to the user and ask them to review.
+
+**Human gate:** only after the user approves do you post it, via the Jira MCP
+`addCommentToJiraIssue` on $story. If the user edits it, post their version. Never post
+without explicit approval.
