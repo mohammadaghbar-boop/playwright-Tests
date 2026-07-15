@@ -18,7 +18,10 @@ Correct order (pull first, push last, never straight to main):
    **worktree** for this story) off the latest `main`. This prevents concurrent sessions
    from clobbering each other.
 3. **Verify** — confirm the new spec is green (or intentionally skipped with reasons) —
-   `/stlc-automate` should have done this; re-check.
+   `/stlc-automate` should have done this; re-check. Run it **in isolation** (scoped/minimal
+   config) so unrelated shared-config or `globalSetup` breakage can't block/mask the result.
+   Ship only the files the spec actually needs — check what's already on `main` and keep the
+   PR to the new spec (+ any genuinely new helper), not the branch's unrelated history.
 4. **Commit** — a focused commit with a conventional message. End the message with the
    repo's required `Co-Authored-By` trailer.
 5. **Rebase check** — pull/rebase `main` again in case teammates merged while you worked;

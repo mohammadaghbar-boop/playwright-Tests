@@ -25,5 +25,15 @@ Run the new spec and confirm it is **green** locally (discovery + actual run). A
 isn't verified green does not proceed. If parts can't pass yet (pending dev / data), mark
 them skipped with a clear reason rather than forcing a pass.
 
+Run it in **isolation** (a minimal/scoped config or a single-file invocation) so an
+unrelated break in the shared config or a browser `globalSetup` an API-only spec doesn't
+need can't block or mask a real green.
+
+### Fixtures & data hygiene
+- **Skip, don't fail, when a fixture is absent.** Guard fixture-dependent cases so they
+  skip cleanly (with a clear reason) if the seeded record/relay isn't in the target env —
+  a missing fixture is not a product failure.
+- **Never hard-code PII** (national ids, names). Fetch it from the DB/API at runtime.
+
 Do **not** commit or push here — that's `/stlc-sync-pr`, which handles branch/worktree
 isolation and the PR.

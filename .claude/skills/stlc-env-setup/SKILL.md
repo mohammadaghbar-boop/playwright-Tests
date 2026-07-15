@@ -28,3 +28,10 @@ Checklist (do the relevant ones):
 Record what's available vs blocked in `qa-artifacts/$story/03-env-check.md`. If something
 needed can't be provisioned with the access we have, flag it — those cases will later be
 classified **Requires dev support**. Never target production.
+
+### When the env has no usable test data
+Prefer to **manufacture it through the real product flow** rather than skipping the positive
+cases. If a fixture (e.g. an issued letter, an accepted case) doesn't exist and the DB relay
+is read/UPDATE-only, create it via the actual UI/API path (the same steps a real user takes),
+then **record the exact IDs as a reusable fixture** in `03-env-check.md` and note it for
+**cleanup at closure**. Don't fabricate results and don't silently drop coverage.

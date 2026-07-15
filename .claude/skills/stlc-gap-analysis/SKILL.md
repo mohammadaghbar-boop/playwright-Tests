@@ -33,3 +33,7 @@ Write a clear, professional Jira comment summarizing the real gaps to
 **Human gate:** only after the user approves do you post it, via the Jira MCP
 `addCommentToJiraIssue` on $story. If the user edits it, post their version. Never post
 without explicit approval.
+
+> Note: the Jira MCP has **no delete/edit-comment tool**. Once a comment is posted it can
+> only be retracted by a superseding reply — so post it right the first time, and keep the
+> draft in `01-gap-comment.md` so re-posting/superseding is easy if the story evolves.
