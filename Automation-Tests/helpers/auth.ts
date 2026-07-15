@@ -1,17 +1,23 @@
 import { Page } from '@playwright/test';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 const BASE_URL = 'https://d-infath-jf-portal.azm-cit.com';
 const SSO_URL = 'https://d-infath-sso.azm-cit.com';
 const MOCK_NAFATH_URL = 'https://qa-infath-mocks.azm-dev.com';
 
+// Credentials come from environment (.env, gitignored) — never hardcode secrets here.
+// superadmin is a privileged account, so there is no in-source fallback: set
+// SUPER_ADMIN_PASSWORD in .env (see .env.example). PD is a demo account, so a demo
+// fallback is kept for out-of-the-box convenience.
 export const SUPER_ADMIN = {
-  email: 'superadmin@infath.sa',
-  password: 'le8me!n123',
+  email: process.env.SUPER_ADMIN_EMAIL ?? 'superadmin@infath.sa',
+  password: process.env.SUPER_ADMIN_PASSWORD ?? '',
 };
 
 export const PD_USER = {
-  email: 'test2@test.com',
-  password: 'Azm@123',
+  email: process.env.PD_EMAIL ?? 'test2@test.com',
+  password: process.env.PD_PASSWORD ?? 'Azm@123',
 };
 
 // ── Internal helper ────────────────────────────────────────────────────────────
