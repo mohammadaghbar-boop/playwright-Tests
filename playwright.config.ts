@@ -16,6 +16,10 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
  * See https://playwright.dev/docs/test-configuration.
  */
 
+// Shared Desktop Edge (msedge channel) config — the TestByAghbar projects all run on
+// this, so factor it out instead of repeating the spread in each project.
+const edgeUse = { ...devices['Desktop Edge'], channel: 'msedge' };
+
 export default defineConfig({
   timeout: 60000,
   testDir: '.',
@@ -37,6 +41,9 @@ export default defineConfig({
   // Nafath mock's "active login request already exists" error under concurrency.
   // CLI runs that pass --workers explicitly (e.g. Automation-Tests specs) override this.
   workers: 1,
+  // Retry on CI so flaky-network runs against the live portal get a second chance
+  // (and the trace below is captured on that retry). No retries locally.
+  retries: process.env.CI ? 2 : 0,
 
   /* Logs in as each role once and caches auth state to .auth/ so specs that
      need a logged-in session don't each pay for their own Nafath login. */
@@ -46,8 +53,16 @@ export default defineConfig({
      whole run finishes, so DB-asserting specs don't leak open connections. */
   globalTeardown: './Automation-Tests/global-teardown.ts',
 
-  reporter: 'html',
+  // HTML for local viewing; JUnit for CI result ingestion; line for concise console output.
+  reporter: [
+    ['html'],
+    ['junit', { outputFile: 'test-results/junit.xml' }],
+    ['line'],
+  ],
   use: {
+    // Base URL so specs can use relative paths (page.goto('/nafath-login')) instead of
+    // hardcoding the portal host. Overridable via BASE_URL in .env.
+    baseURL: process.env.BASE_URL ?? 'https://d-infath-jf-portal.azm-cit.com',
     video: 'retain-on-failure',
     trace: 'on-first-retry',
   },
@@ -59,7 +74,7 @@ export default defineConfig({
       name: 'setup',
       testDir: './TestByAghbar',
       testMatch: '**/auth.setup.ts',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+      use: { ...edgeUse },
     },
 
     // 2. Login specs — no storageState (test the login flow itself)
@@ -67,7 +82,7 @@ export default defineConfig({
       name: 'login-tests',
       testDir: './TestByAghbar',
       testMatch: '**/JF-*/01-login.spec.ts',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+      use: { ...edgeUse },
     },
 
     // 3. SP feature specs — reuse SP storageState
@@ -80,8 +95,7 @@ export default defineConfig({
       testIgnore: '**/JF-167-*/**',
       dependencies: ['setup'],
       use: {
-        ...devices['Desktop Edge'],
-        channel: 'msedge',
+        ...edgeUse,
         storageState: 'TestByAghbar/.auth/user.json',
       },
     },
@@ -92,7 +106,7 @@ export default defineConfig({
       name: 'heir-setup',
       testDir: './TestByAghbar',
       testMatch: '**/heir-auth.setup.ts',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+      use: { ...edgeUse },
     },
 
     // 5. Heir login spec — no storageState
@@ -100,7 +114,7 @@ export default defineConfig({
       name: 'heir-login-tests',
       testDir: './TestByAghbar',
       testMatch: '**/JF-167-*/01-*.spec.ts',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+      use: { ...edgeUse },
     },
 
     // 6. Heir feature specs — reuse heir storageState
@@ -110,8 +124,7 @@ export default defineConfig({
       testMatch: ['**/JF-167-*/0[2-9]-*.spec.ts', '**/JF-167-*/[1-9][0-9]-*.spec.ts'],
       dependencies: ['heir-setup'],
       use: {
-        ...devices['Desktop Edge'],
-        channel: 'msedge',
+        ...edgeUse,
         storageState: 'TestByAghbar/.auth/heir.json',
       },
     },
@@ -126,28 +139,8 @@ export default defineConfig({
     },
     {
       name: 'Microsoft Edge',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+      use: { ...edgeUse },
     },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
   ],
 
   /* Run your local dev server before starting the tests */
