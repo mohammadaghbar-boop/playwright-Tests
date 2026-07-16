@@ -25,3 +25,19 @@ Show the drafts to the user. **Human gate:** only after approval, use the Jira M
   next to its case (so `/stlc-aio-update` and `/stlc-closure` can reference it).
 
 Never open duplicates — check whether a matching defect already exists first.
+
+### Before you file: confirm at the delivery layer
+A finding seen only at the API can be **refuted by the UI** — the front end may render or
+mask something the raw response omits. Verify each candidate defect on the actual
+page/PDF/card the user sees before filing; drop the ones the UI handles correctly. (In the
+JF-844 run, two of three API "defects" were refuted this way.)
+
+### Jira MCP limits (learned the hard way)
+- There is **no delete/edit-comment tool**. If a comment must be retracted, post a
+  **superseding reply** that withdraws it (reference the old comment id) rather than trying
+  to delete it.
+- `addCommentToJiraIssue` **escapes the wiki mention syntax `[~accountid:…]` to literal
+  text** — it does not produce a real @mention or notification. To notify someone, set them
+  as **assignee** (that notifies), or confirm the mention actually rendered.
+- Reusing an existing placeholder issue is fine (overwrite summary/description via
+  `editJiraIssue`), but read its current state first so you don't clobber real content.
