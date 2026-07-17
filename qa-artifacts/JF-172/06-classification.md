@@ -26,7 +26,7 @@ Verified against real completed assignments (INH00016 accepted, INH00018 rejecte
 ## Observation (not a defect)
 **JF172-OBS-1:** assignment is coupled to a fresh classification-save and fires sub-second; `workflow/start` on an already-classified estate does not re-fire it. Expected semantics. Documented for the closure report; will NOT be filed as a bug (confirmed via the event20→event23 timing on real data).
 
-## To reach 100% coverage (env asks, not JF-172 bugs)
-Provision (a) a 2nd + same-rank + an inactive liquidator service (for TC-03/04/07/08), and (b) a fresh estate through automatic classification (JF-171 pipeline) to drive TC-12/14 and on-demand assignment. Both are environment/data gaps, not JF-172 defects.
+## ROOT CAUSE of the unrun cases — already-logged bug JF-717 (not "missing data")
+The unrun cases all need a fresh **pending** assignment, which needs a fresh **classification**, which is **BLOCKED by JF-717** (High, To Do): *SAMA inquiry callback times out, `ack_status` stays S1000000, `retry_attempt=0`, retry never triggered* → the SAMA inquiry never "finishes" → per JF-157 readiness only fires when all 5 inquiries finish → readiness never runs → no classification → no assignment. Verified live: the stuck estates sit with SAMA status 5 / retryAttempt 0. Related already-logged bugs: JF-719 (same SAMA no-retry), JF-726 (manual re-inquiry stuck — UI SignalR CORS on d-infath-a-ws.azm-cit.com), JF-542; readiness-correctness JF-927 + JF-735 (on JF-157). **These pre-existing bugs — not a JF-172 defect and not a data gap I can fabricate — are why TC-03/04/07/08/12/14 are unrun.** They will run once JF-717 (+ the readiness bugs) are fixed and the pipeline can classify a fresh estate. To provision the extra liquidator services is still doable, but useless until JF-717 unblocks a fresh assignment.
 
 **Verdict: JF-172 functionally correct on all exercised paths; 0 defects. Remaining gaps are data/environment, not product.**

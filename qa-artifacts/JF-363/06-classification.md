@@ -23,4 +23,7 @@ Verified against real completed assignments (INH00016 accepted, INH00018 rejecte
 **Passed: 10 (6 direct + 4 inferred) · Requires further data: 4 · UI-only: 1 · Defects: 0.**
 
 ## Verdict
-JF-363 accept and reject flows (status transitions, logs with correct Arabic events, rejection reason, liquidator exclusion, reassignment restart) are **functionally correct** on all exercised paths — **0 defects**. Remaining gaps (pre-acceptance data-hiding/read-only, 48h expiry, transactional, confirmation-modal text) need a fresh **pending** assignment (trigger-gated by JF-171 classification) or UI/fault-injection — environment/data limits, not JF-363 defects.
+JF-363 accept and reject flows (status transitions, logs with correct Arabic events, rejection reason, liquidator exclusion, reassignment restart) are **functionally correct** on all exercised paths — **0 defects**.
+
+## ROOT CAUSE of the unrun cases — already-logged bug JF-717 (not "missing data")
+The unrun cases (TC-363-11/12 pre-acceptance data-hiding/read-only, TC-363-13 48h expiry) need a fresh **pending** assignment, which needs a fresh **classification** — **BLOCKED by JF-717** (High, To Do): SAMA inquiry callback timeout → retry never triggered → inquiry never finishes → readiness never fires (JF-157) → no classification → no fresh assignment. Related: JF-719, JF-726 (re-inquiry stuck / UI SignalR CORS), JF-927 + JF-735 (readiness). TC-363-15 (transactional) needs a dev fault-hook. **These are pre-existing logged bugs, not JF-363 defects and not data I can fabricate.** They run once JF-717 + the readiness bugs are fixed.
