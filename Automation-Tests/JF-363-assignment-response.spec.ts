@@ -73,4 +73,37 @@ test.describe('JF-363 liquidator accept/reject (API regression guard)', () => {
     expect(c!.liquidatorName, 'a rejected assignment must not carry a liquidator').toBeFalsy();
     expect(c!.status, 'after reject the estate remains «قيد تعيين مصفي»').toBe(STATUS_PENDING);
   });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // BLOCKED ACs — present and ready; run once the blockers are fixed.
+  // All need a FRESH PENDING assignment (an estate assigned but not yet accepted),
+  // currently unobtainable because a fresh classification can't run — blocked by:
+  //   JF-717 (SAMA inquiry retry never triggered → no fresh classification)
+  //   JF-927 / JF-735 (readiness). TC-15 also needs a dev fault-injection hook.
+  // To enable: fix JF-717/JF-927, seed a fresh pending assignment for the
+  // liquidator (set JF363_PENDING_ESTATE), then remove `.fixme`.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  test.fixme('@blocked-JF717 sensitive data is not displayed before acceptance [TC-363-11]', async () => {
+    // AC: "Before acceptance ... restricted sensitive data is not displayed".
+    // Setup: a PENDING assignment (JF363_PENDING_ESTATE) viewed as the assigned liquidator.
+    // Assert the pre-acceptance case view omits: bank info, deceased ID, heirs IDs/mobile/email/IBAN,
+    // national address.
+  });
+
+  test.fixme('@blocked-JF717 inheritance file is read-only before acceptance [TC-363-12]', async () => {
+    // AC: "Before acceptance, the inheritance file is displayed in read-only mode".
+    // Setup: PENDING assignment viewed as the liquidator; assert no edit/mutation actions are permitted.
+  });
+
+  test.fixme('@blocked-JF717 request expires after 48h with no response [TC-363-13]', async () => {
+    // AC: "If no response is taken within 48 hours, the assignment request expires" + removed from list.
+    // Setup: a pending request aged past 48h; run the expiry job; assert expiry + removal + reassignment.
+  });
+
+  test.fixme('@blocked-devhook accept/reject are transactional — no partial updates [TC-363-15]', async () => {
+    // AC: "Accept and reject actions are completed transactionally without partial updates".
+    // Setup: inject a mid-accept failure (needs a dev fault hook); assert status/buttons unchanged and
+    // no partial state persisted.
+  });
 });
