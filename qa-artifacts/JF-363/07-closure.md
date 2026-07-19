@@ -17,5 +17,12 @@ Notifications (email + in-app) and exhaustion/escalation OUT (Raouf); authorizat
 ## Automation
 `Automation-Tests/JF-363-assignment-response.spec.ts` — API-first guards (accept persists, reject leaves pending), verified green; 4 blocked ACs included as ready-to-run `test.fixme`. PR #19.
 
+## FE / UI coverage (added 2026-07-19)
+The accept/reject **outcomes** are now verified in the browser via `Automation-Tests/JF-172-363-liquidator-assignment-ui.spec.ts` (msedge, POM). Distinct FE rendering for the two paths, confirming the earlier UI-only case and the accept/reject results at the layer the user sees:
+- **Accept (INH00016):** estate detail exposes liquidator **Majed ALQAHTANI**; list status «حصر التركة» (in-work).
+- **Reject (INH00018):** list shows **no active liquidator** and status «اسناد التركة» (back to assignment); detail carries no liquidator name.
+
+**3/3 FE tests green** (`ui-run.log`). The interactive accept/reject *button* action needs a fresh **pending** request → still gated by JF-717 (unchanged), so that remains a `test.fixme` in the API spec.
+
 ## Metrics
 Cases 15 · Passed 10 · Blocked 4 · UI-only 1 · Defects (JF-363) 0 · Blocking bugs 2 (JF-717, JF-927) + 3 related.
