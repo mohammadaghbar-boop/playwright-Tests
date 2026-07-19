@@ -1,5 +1,7 @@
 import { Page, expect, chromium } from '@playwright/test';
-import { PD_USER, URLS } from './users';
+import * as fs from 'fs';
+import * as path from 'path';
+import { PD_USER, URLS, NATIONAL_IDS } from './users';
 
 /**
  * Shared login recipes (single source of truth — every spec/fixture reuses these,
@@ -39,6 +41,97 @@ export async function loginViaNafath(page: Page, nationalId: string, portalChoic
   await expect
     .poll(() => (page.url().includes('login-callback') ? 'pending' : 'done'), { timeout: 30_000 })
     .toBe('done');
+}
+
+/**
+ * Bearer + facility context for LIQUIDATOR-scoped API calls.
+ *
+ * The external portal keeps its JWT in memory only (never in web storage), and its
+ * API calls authenticate with `Authorization` + `x-facility-id` (NO TenantIdentifier)
+ * — verified by sniffing the SPA on CIT 2026-07-19. So the only way to drive the
+ * liquidator-scoped APIs (correspondence, assignment, in-estate surfaces) is to let
+ * the SPA log in, enter the facility, and capture those headers off its own traffic.
+ *
+ * Reuses the cached `.auth/liquidator.json` session when present (silent SSO
+ * re-auth); falls back to a full Nafath-mock login, waiting out the mock's
+ * "active login request already exists" collision (it expires in ~60s — the mock
+ * rejects concurrent logins per identity). Returns null on any failure so callers
+ * can `test.skip` cleanly rather than hard-fail.
+ */
+export interface LiquidatorApiAuth {
+  token: string;
+  facilityId: string;
+}
+
+export async function captureLiquidatorApiAuth(
+  nationalId = NATIONAL_IDS.liquidator,
+): Promise<LiquidatorApiAuth | null> {
+  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  try {
+    const stateFile = path.resolve(__dirname, '..', '..', '.auth', 'liquidator.json');
+    const context = await browser.newContext({
+      locale: 'ar-SA',
+      ignoreHTTPSErrors: true,
+      ...(fs.existsSync(stateFile) ? { storageState: stateFile } : {}),
+    });
+    const page = await context.newPage();
+    let token: string | null = null;
+    let facilityId: string | null = null;
+    page.on('request', (r) => {
+      if (!r.url().startsWith(URLS.api)) return;
+      const auth = r.headers()['authorization'];
+      const fac = r.headers()['x-facility-id'];
+      // The facility-scoped token is the one we want — keep overwriting until
+      // a request carries both headers (post-facility-entry traffic).
+      if (auth?.startsWith('Bearer ') && fac) {
+        token = auth.slice(7);
+        facilityId = fac;
+      }
+    });
+
+    await page.goto(`${URLS.portal}/service-providers/companies`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+
+    // Session gone → full Nafath-mock login (with collision wait).
+    if (/nafath-login|\/login\b/.test(page.url())) {
+      await page.goto(`${URLS.portal}/nafath-login`);
+      await page.locator('button:has-text("مزود الخدمة")').click();
+      await page.waitForURL((url) => url.href.startsWith(URLS.sso), { timeout: 30_000 });
+      await page.locator('a:has-text("Nafath"), button:has-text("Nafath")').first().click();
+      await page.waitForURL((url) => url.href.startsWith(URLS.nafathMock), { timeout: 30_000 });
+      await page.locator('#btnToggleUsers, button:has-text("Mock Users")').first().click();
+      const userBtn = page.locator(`button[data-fill="${nationalId}"]`).first();
+      await userBtn.waitFor({ timeout: 20_000 });
+      await userBtn.click({ force: true });
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const body = (await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ');
+        if (/active login request already exists/i.test(body)) await page.waitForTimeout(60_000);
+        await page.locator('#btnStartNafath, button:has-text("تسجيل الدخول")').first()
+          .click({ force: true }).catch(() => undefined);
+        const t0 = Date.now();
+        while (Date.now() - t0 < 25_000 && !page.url().startsWith(URLS.portal)) await page.waitForTimeout(1000);
+        if (page.url().startsWith(URLS.portal)) break;
+      }
+      for (let i = 0; i < 30 && page.url().includes('login-callback'); i++) await page.waitForTimeout(1000);
+      await page.goto(`${URLS.portal}/service-providers/companies`, { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(3000);
+    }
+
+    // Enter the facility so subsequent API traffic carries x-facility-id.
+    const enterBtn = page.getByRole('button', { name: 'الدخول على المنشأة' });
+    if (await enterBtn.count()) {
+      await enterBtn.first().click().catch(() => undefined);
+      await page.waitForTimeout(3000);
+    }
+    // Force facility-scoped API calls and wait for the sniffer.
+    await page.goto(`${URLS.portal}/service-providers/court-cases`, { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    for (let i = 0; i < 30 && !(token && facilityId); i++) await page.waitForTimeout(1000);
+    return token && facilityId ? { token, facilityId } : null;
+  } catch {
+    return null;
+  } finally {
+    await browser.close();
+  }
 }
 
 /**

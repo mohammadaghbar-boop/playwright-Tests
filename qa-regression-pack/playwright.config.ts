@@ -38,7 +38,7 @@ export default defineConfig({
     },
     {
       name: 'internal', // PD / internal-portal specs
-      testMatch: ['01-auth/**/*.spec.ts', '02-admin/**/*.spec.ts', '04-estate-core/**/*.spec.ts', '06-assets-classification/**/*.spec.ts'],
+      testMatch: ['01-auth/**/*.spec.ts', '02-admin/**/*.spec.ts', '04-estate-core/**/*.spec.ts', '06-assets-classification/**/*.spec.ts', '09-erp-integrations/**/*.spec.ts'],
       use: {
         ...devices['Desktop Edge'],
         channel: 'msedge',

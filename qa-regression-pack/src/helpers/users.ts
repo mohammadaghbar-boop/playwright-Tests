@@ -30,6 +30,11 @@ export const INTERNAL_USERS = {
     email: process.env.PD_EMAIL || 'test2@test.com',
     password: process.env.PD_PASSWORD || 'Azm@123',
   },
+  /** Verified 200 on CIT (area-d cycle 2026-07-16); used by the JF-979 dashboard spec. */
+  relationshipManager: {
+    email: process.env.RM_EMAIL || 'demo-relationship-manager@azm.sa',
+    password: process.env.RM_PASSWORD || 'Azm@123',
+  },
 };
 
 /** Back-compat: default internal user = estate manager (works for the backbone). */
