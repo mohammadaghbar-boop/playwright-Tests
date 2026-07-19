@@ -1,0 +1,33 @@
+Test Id,Summary,Priority,TestSteps,ExpectedResults,Story,Test Type,Component,Release,Status,Creator
+TC-363-01,Liquidator accepts the assignment from the details page,High,As the selected liquidator open an estate with a pending assignment request,"After confirming Accept, the inheritance status becomes «قيد العمل» and the liquidator gets full access to the inheritance data",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Click Accept / قبول and confirm in the modal,,,,,,,
+,,,Verify the stored status and data access,,,,,,,
+TC-363-02,Accept/Reject actions are removed after acceptance,Medium,Accept an assignment as in TC-363-01,"The Accept / قبول and Reject / تعذر actions are no longer shown on the details page or the list",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Re-open the estate details and the inheritance list,,,,,,,
+TC-363-03,Acceptance creates a log entry «قبول المصفي لطلب الإسناد»,High,Accept an assignment,"One log entry «قبول المصفي لطلب الإسناد» is created (Done By = the liquidator, status «قيد العمل») with View-More showing liquidator, rank, action = قبول, result",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Query the inheritance log / CaseEvents for the acceptance event,,,,,,,
+TC-363-04,Liquidator accepts from the inheritance list,Medium,Open the liquidator inheritance list with a pending request,"Accept from the list applies the same acceptance behavior (confirmation modal then status «قيد العمل»)",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Click Accept / قبول from the list row and confirm,,,,,,,
+TC-363-05,Liquidator rejects the assignment with a reason,High,Open an estate with a pending assignment request as the liquidator,"After confirming Reject with a reason, the inheritance status remains «قيد تعيين مصفي»",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,"Click Reject / تعذر, enter a rejection reason, and confirm",,,,,,,
+,,,Verify the stored status is unchanged,,,,,,,
+TC-363-06,Rejection reason is recorded in the log «تعذر المصفي عن قبول طلب الإسناد»,High,Reject an assignment with a reason,"A log entry «تعذر المصفي عن قبول طلب الإسناد» is created capturing the rejection reason and liquidator",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Query the inheritance log / CaseEvents for the rejection event and reason,,,,,,,
+TC-363-07,Rejected estate is removed from the rejecting liquidator's list,Medium,Reject an assignment,"The estate no longer appears in the rejecting liquidator's inheritance list",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Reload the liquidator inheritance list,,,,,,,
+TC-363-08,Rejecting liquidator is excluded from future assignment for the same estate,High,Reject an assignment then trigger reassignment,"The same liquidator is not selected again for that estate",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Confirm the rejected liquidator is excluded on reassignment,,,,,,,
+TC-363-09,Reassignment process restarts after rejection,Medium,Reject an assignment,"The system restarts the assignment process (per JF-172); if an eligible liquidator remains a new request is sent, otherwise it stops cleanly",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Observe reassignment behavior after the rejection,,,,,,,
+TC-363-10,Liquidator rejects from the inheritance list,Medium,Open the liquidator list with a pending request,"Reject from the list applies the same rejection behavior (confirmation + optional reason)",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Click Reject / تعذر from the list row and confirm,,,,,,,
+TC-363-11,Sensitive data is not displayed before acceptance,High,"As the assigned liquidator, view the inheritance file BEFORE accepting","Bank info, deceased ID, heirs IDs/mobile/email/IBAN, and national address are not displayed (read-only, restricted)",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Inspect the pre-acceptance case view / API response for restricted fields,,,,,,,
+TC-363-12,Inheritance file is read-only before acceptance,Medium,View the inheritance file before accepting,"The file is shown in read-only mode; no edit actions are available pre-acceptance",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Attempt to confirm no editable controls are exposed,,,,,,,
+TC-363-13,Request expires after 48 hours with no response,Medium,"Take a pending assignment request and age it past 48 hours (timestamp)","The request expires, the estate is removed from the liquidator's list, and reassignment restarts (liquidator excluded)",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Run the expiry job and verify the outcome,,,,,,,
+TC-363-14,A confirmation modal is shown before accept and before reject,Medium,Click Accept / قبول then click Reject / تعذر,"A confirmation modal appears before each action (accept confirm; reject confirm with optional reason field)",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Verify the modal text for each action,,,,,,,
+TC-363-15,Accept/Reject are transactional (no partial updates),Medium,"Force a failure mid-accept (technical error)","The whole action fails, status and buttons are unchanged, and an error message is shown; no partial update is saved",JF-363,Manual,,,NR,Ahmad Altwaam
+,,,Confirm no partial state persisted after the failure,,,,,,,

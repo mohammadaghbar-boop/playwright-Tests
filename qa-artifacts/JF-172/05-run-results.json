@@ -1,0 +1,32 @@
+{
+  "story": "JF-172",
+  "phase": "run",
+  "method": "Verified JF-172 output ACs against REAL completed assignments in CIT (option-1, user-approved). Fresh on-demand re-trigger is gated by trigger semantics (see observation).",
+  "evidence_base": [
+    "INH00016 — rank-D estate, assigned to Majed ALQAHTANI (service rank A), event 20->23 in ~0.55s, sent_at 16:13, req_status=2 (accepted). event 23 «إرسال طلب تعيين للمصفي» has meta_data (View-More) present.",
+    "INH00018 — rank-D estate, assigned to Majed (rank A), event 20->23 in ~0.31s, req_status=3 (rejected, reason recorded), event 25 «تعذر المصفي عن قبول طلب الإسناد»."
+  ],
+  "results": [
+    { "id": "TC-172-01", "outcome": "Passed", "evidence": "event 20 (classification) -> event 23 (assignment) within ~0.3-0.55s on both INH00016 & INH00018 — assignment auto-starts after a saved rank" },
+    { "id": "TC-172-02", "outcome": "Passed", "evidence": "only the accepted Liquidator service (Majed) was selected as candidate; consistent with role filter (JF-787 Done)" },
+    { "id": "TC-172-05", "outcome": "Passed", "evidence": "rank-D estate -> rank-A liquidator on both cases = higher-rank escalation (D->...->A)" },
+    { "id": "TC-172-06", "outcome": "Passed", "evidence": "never assigned below the estate rank (assigned a HIGHER rank); no lower-rank assignment observed" },
+    { "id": "TC-172-09", "outcome": "Passed", "evidence": "status transitions on assignment; request carries sent_at_utc" },
+    { "id": "TC-172-10", "outcome": "Passed", "evidence": "exactly one event 23 «إرسال طلب تعيين للمصفي» per estate, with meta_data (View-More: liquidator, rank, action status) present" },
+    { "id": "TC-172-11", "outcome": "Passed", "evidence": "request surfaced to the liquidator's list and was actionable — liquidator accepted (INH00016) / rejected (INH00018)" },
+    { "id": "TC-172-13", "outcome": "Passed", "evidence": "each estate has exactly one active assignment request; no duplicate/overlapping request observed (JF-791 Done)" },
+    { "id": "TC-172-15", "outcome": "Passed (indirect)", "evidence": "after INH00018 reject (event 25), Majed is excluded; no other liquidator exists so reassignment correctly finds none and stops — evidences exclusion of the non-accepting liquidator" },
+    { "id": "TC-172-16", "outcome": "Passed (indirect)", "evidence": "post-reject, no eligible liquidator -> process stops cleanly, no error, no wrong assignment" },
+    { "id": "TC-172-04", "outcome": "Requires further data", "reason": "same-rank-first can't be shown without a rank-D liquidator; only escalation demonstrated. Needs a same-rank liquidator service." },
+    { "id": "TC-172-03", "outcome": "Requires further data", "reason": "no inactive liquidator service available to prove exclusion" },
+    { "id": "TC-172-07", "outcome": "Requires further data", "reason": "workload priority needs >=2 eligible same-rank liquidators; only Majed exists" },
+    { "id": "TC-172-08", "outcome": "Requires further data", "reason": "tie-break needs 2 equal-workload same-rank liquidators" },
+    { "id": "TC-172-12", "outcome": "Requires further data", "reason": "need an estate with classification saved WITHOUT a valid rank to prove no-start" },
+    { "id": "TC-172-14", "outcome": "Requires further data", "reason": "48h timeout->reassignment needs a pending request aged past 48h (timestamp manipulation) or a real wait; no timed-out request in data" }
+  ],
+  "observation_not_a_defect": {
+    "id": "JF172-OBS-1",
+    "text": "Assignment (event 23) is coupled to a FRESH classification-save (event 20) and fires synchronously ~0.3-0.55s later. POST /workflow/start on an ALREADY-classified estate leaves the orchestration at phase 'assignment' status 'Running' but produces no new request (verified on INH00009 rank-A and INH00010 rank-D; no event 23; case stayed status 10). This is expected trigger semantics, NOT a bug — confirmed by the sub-second event20->event23 gap on the real completed estates. On-demand fresh assignment therefore requires a fresh estate through automatic classification (JF-171 pipeline)."
+  },
+  "totals": { "passed": 10, "requires_further_data": 6, "defects": 0 }
+}

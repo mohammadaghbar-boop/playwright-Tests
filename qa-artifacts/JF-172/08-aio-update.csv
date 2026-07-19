@@ -1,0 +1,17 @@
+Test Id,Final Status,Linked Defect,Note
+TC-172-01,Passed,,Auto-start after saved rank (event 20->23 ~0.5s)
+TC-172-02,Passed,,Only Liquidator services considered
+TC-172-05,Passed,,Higher-rank escalation D->A
+TC-172-06,Passed,,Never lower rank
+TC-172-09,Passed,,Status «قيد تعيين المصفي»
+TC-172-10,Passed,,Single event-23 log + View-More meta
+TC-172-11,Passed,,Appears in liquidator list (accept/reject exercised)
+TC-172-13,Passed,,Duplicate-request guard
+TC-172-15,Passed,,Exclude non-accepter (indirect)
+TC-172-16,Passed,,No-eligible-liquidator stops cleanly (indirect)
+TC-172-04,Blocked,JF-717,Same-rank-first — needs fresh assignment + rank-D liquidator
+TC-172-03,Blocked,JF-717,Inactive exclusion — needs fresh assignment + inactive liquidator
+TC-172-07,Blocked,JF-717,Workload priority — needs 2 same-rank liquidators
+TC-172-08,Blocked,JF-717,Tie-break — needs 2 equal-workload liquidators
+TC-172-12,Blocked,JF-927,No-rank-no-start — needs NA estate
+TC-172-14,Blocked,JF-717,48h reassignment — needs pending request aged 48h

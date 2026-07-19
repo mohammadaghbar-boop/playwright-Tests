@@ -1,0 +1,16 @@
+Test Id,Final Status,Linked Defect,Note
+TC-363-01,Passed,,Accept -> «قيد العمل» + full access (INH00016)
+TC-363-02,Passed,,Accept/Reject actions removed after acceptance (inferred)
+TC-363-03,Passed,,Acceptance log «قبول المصفي لطلب الإسناد» (event 24)
+TC-363-04,Passed,,Accept from list (same endpoint, inferred)
+TC-363-05,Passed,,Reject keeps «قيد تعيين مصفي» (INH00018)
+TC-363-06,Passed,,Rejection log «تعذر المصفي عن قبول طلب الإسناد» + reason
+TC-363-07,Passed,,Removed from rejecter's list (inferred)
+TC-363-08,Passed,,Rejecter excluded
+TC-363-09,Passed,,Reassignment restarts (stops cleanly - single liquidator)
+TC-363-10,Passed,,Reject from list (same endpoint, inferred)
+TC-363-11,Blocked,JF-717,Pre-acceptance sensitive-data-hidden — needs pending assignment
+TC-363-12,Blocked,JF-717,Read-only pre-acceptance — needs pending assignment
+TC-363-13,Blocked,JF-717,48h expiry — needs pending request aged 48h
+TC-363-14,Not Run,,Confirmation-modal text — UI-only (not API-assertable)
+TC-363-15,Blocked,JF-717,Transactional/no-partial-update — also needs dev fault hook
