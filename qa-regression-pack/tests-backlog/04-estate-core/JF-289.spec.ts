@@ -3,13 +3,21 @@ import { test, expect } from '@playwright/test';
 /**
  * JF-289 — الاستعلام عن بيانات البنك المركزي
  * Jira status at generation: Reopened (dev-complete)
+ * Coverage layers: FE (UI) + BE (API) + DB verification. Fill each from the ACs.
  * Full story text: JF-QA-Full-Cycle/system-docs/issues/JF-289-*.md
  */
 test.describe('JF-289 الاستعلام عن بيانات البنك المركزي', () => {
-  test('happy path per acceptance criteria', async ({ page }) => {
-    // TODO(JF-289): implement from the story's acceptance criteria
+  // BE (API): assert the endpoint contract / RBAC / data shape behind this story.
+  test.fixme('@be JF-289 — API: endpoint contract & rules', async () => {
+    // TODO(JF-289/BE): call the story's API (src/helpers/api.ts) and assert status + payload.
     test.info().annotations.push({ type: 'story', description: 'JF-289' });
-    expect(true).toBe(true);
+    test.info().annotations.push({ type: 'layer', description: 'be' });
+  });
+  // DB: verify persisted state (SELECT-only, env-gated on CB_*).
+  test.fixme('@db JF-289 — DB: persisted state matches', async () => {
+    // TODO(JF-289/DB): guard with dbAvailable(); SELECT the affected row(s) and assert (src/db.ts).
+    test.info().annotations.push({ type: 'story', description: 'JF-289' });
+    test.info().annotations.push({ type: 'layer', description: 'db' });
   });
 
   // JF-518 [Ready For UAT] Central Bank acknowledgment response missing MsgHdrRs wrapper and MsgHdrRq not included in request

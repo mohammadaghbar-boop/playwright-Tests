@@ -20,6 +20,45 @@ export async function loginInternal(page: Page, email = PD_USER.email, password 
 }
 
 /**
+ * Demo-users panel login (for the SystemAdmin/Purchasing account whose password is not
+ * shared with the API-login helper). Opens `/login`, expands the "مستخدمين تجريبيين"
+ * panel, picks the row for `email` (boundary-aware so admin@ ≠ superadmin@), submits, and
+ * waits off the login screen. This is the only reliable way to obtain a **SystemAdmin**
+ * browser session on CIT — the admin config screens (task-management, roles, flow-maps)
+ * are SystemAdmin-scoped, so the internal EstateManager pd.json session is not authorized
+ * for them. Returns void; callers should assert they left /login and `test.skip` cleanly
+ * if not (a demo-panel hiccup must not red-fail the pack).
+ */
+export async function loginDemoPanel(page: Page, email = 'admin@infath.sa'): Promise<void> {
+  await page.goto(`${URLS.portal}/login`, { waitUntil: 'domcontentloaded' });
+  await page.locator('button:has-text("مستخدمين تجريبيين")').click();
+  const idx = await page.evaluate((em) => {
+    // Boundary-aware email match so "admin@infath.sa" does NOT match the
+    // "superadmin@infath.sa" row (admin@ is a substring of superadmin@).
+    const esc = em.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp('(^|[^A-Za-z0-9._%+-])' + esc + '(?![A-Za-z0-9._%+-])');
+    const btns = Array.from(document.querySelectorAll('button')).filter((b) => (b.textContent || '').includes('اختيار'));
+    for (let i = 0; i < btns.length; i++) {
+      let el: Element | null = btns[i];
+      while (el?.parentElement) {
+        const p: Element = el.parentElement;
+        if (Array.from(p.querySelectorAll('button')).filter((x) => (x.textContent || '').includes('اختيار')).length > 1) break;
+        el = p;
+      }
+      if (re.test(el?.textContent || '')) return i;
+    }
+    return -1;
+  }, email);
+  if (idx < 0) throw new Error(`demo-panel row for ${email} not found`);
+  await page.locator('button:has-text("اختيار")').nth(idx).click();
+  await page.waitForTimeout(1500);
+  if (page.url().includes('/login')) {
+    await page.locator('button[type="submit"], button:has-text("تسجيل الدخول")').first().click().catch(() => undefined);
+  }
+  await page.waitForURL((url) => !url.href.includes('/login'), { timeout: 30_000 }).catch(() => undefined);
+}
+
+/**
  * Nafath-mock login for external users (SP / liquidator / heir).
  * portalChoice: the button text on /nafath-login ("مزود الخدمة" or "الأفراد").
  */

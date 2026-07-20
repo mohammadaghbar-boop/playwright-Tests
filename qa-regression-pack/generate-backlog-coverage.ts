@@ -85,22 +85,49 @@ for (const s of stories) {
   fs.mkdirSync(dir, { recursive: true });
   const devDone = DEV_COMPLETE.has(f.status.name);
   const linkedBugs = bugsByStory[s.key] || [];
+  // Every story carries all THREE coverage layers so the whole-system map mirrors the
+  // FE + BE(API) + DB model of the other packs. Each layer is a test.fixme skeleton
+  // (features here are not built yet) tagged @fe / @be / @db and annotated with the story.
+  const kw = (f.summary + ' ' + descText(f.description).slice(0, 300)).toLowerCase();
+  const hasUi = !/erp|integration|webhook|\bapi\b|journal|posting|dimension/.test(kw); // ERP/integration stories are BE/DB-only
+  const fmt = (n: string): string => esc(n).replace(/'/g, "\\'");
   const lines = [
     `import { test, expect } from '@playwright/test';`,
     '',
     '/**',
     ` * ${s.key} — ${f.summary}`,
     ` * Jira status at generation: ${f.status.name} (${devDone ? 'dev-complete' : 'NOT developed yet'})`,
+    ` * Coverage layers: FE (UI) + BE (API) + DB verification. Fill each from the ACs.`,
     ` * Full story text: JF-QA-Full-Cycle/system-docs/issues/${s.key}-*.md`,
     ' */',
-    `test.describe('${s.key} ${esc(f.summary).replace(/'/g, "\\'")}', () => {`,
-    `  test${devDone ? '' : '.fixme'}('happy path per acceptance criteria', async ({ page }) => {`,
-    `    // TODO(${s.key}): implement from the story's acceptance criteria`,
-    `    test.info().annotations.push({ type: 'story', description: '${s.key}' });`,
-    `    expect(true).toBe(true);`,
-    `  });`,
+    `test.describe('${s.key} ${fmt(f.summary)}', () => {`,
   ];
-  scenarios++;
+  if (hasUi) {
+    lines.push(
+      `  // FE (UI): drive the real screen for this story through the browser.`,
+      `  test.fixme('@fe ${s.key} — UI: user completes the flow on screen', async ({ page }) => {`,
+      `    // TODO(${s.key}/FE): navigate the screen(s) and assert the ACs via getByRole/getByTestId.`,
+      `    test.info().annotations.push({ type: 'story', description: '${s.key}' });`,
+      `    test.info().annotations.push({ type: 'layer', description: 'fe' });`,
+      `  });`,
+    );
+    scenarios++;
+  }
+  lines.push(
+    `  // BE (API): assert the endpoint contract / RBAC / data shape behind this story.`,
+    `  test.fixme('@be ${s.key} — API: endpoint contract & rules', async () => {`,
+    `    // TODO(${s.key}/BE): call the story's API (src/helpers/api.ts) and assert status + payload.`,
+    `    test.info().annotations.push({ type: 'story', description: '${s.key}' });`,
+    `    test.info().annotations.push({ type: 'layer', description: 'be' });`,
+    `  });`,
+    `  // DB: verify persisted state (SELECT-only, env-gated on CB_*).`,
+    `  test.fixme('@db ${s.key} — DB: persisted state matches', async () => {`,
+    `    // TODO(${s.key}/DB): guard with dbAvailable(); SELECT the affected row(s) and assert (src/db.ts).`,
+    `    test.info().annotations.push({ type: 'story', description: '${s.key}' });`,
+    `    test.info().annotations.push({ type: 'layer', description: 'db' });`,
+    `  });`,
+  );
+  scenarios += 2;
   for (const b of linkedBugs) {
     const open = !['Ready For UAT', 'UAT', 'Rejected'].includes(b.fields.status.name);
     lines.push(
