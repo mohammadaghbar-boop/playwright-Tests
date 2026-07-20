@@ -15,8 +15,9 @@ passing cases and the exact steps that produced them) — not the exploratory at
 ### Follow repo conventions
 - TypeScript, `import` syntax, strict types (match the suite).
 - Naming: `JF-XXX-kebab-name.spec.ts` under the right folder for the domain.
-- Reuse the shared login/auth, fixtures, and page objects; use `baseURL`/relative paths
-  once available. Prefer role/testid locators and **web-first assertions**; avoid
+- Reuse the existing **automation packs** — shared login/auth, fixtures, page objects, and
+  sibling specs — rather than re-implementing; use `baseURL`/relative paths once available.
+  Prefer role/testid locators and **web-first assertions**; avoid
   `waitForTimeout`/`networkidle`. (See the audit's restructure conventions.)
 - Evidence/artifacts: rely on Playwright trace/video; **never screenshots**.
 

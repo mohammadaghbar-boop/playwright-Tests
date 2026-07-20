@@ -38,7 +38,7 @@ name and silently drifts if an earlier phase inserts an extra numbered file.
 |---|---|---|
 | 0  | test-planning     | `00-test-plan.md` |
 | 1  | gap-analysis      | `01-gap-comment.md` |
-| 2  | test-cases        | `02-test-cases-AIO.csv` |
+| 2  | test-cases        | `02-$story-TestCases-AIO.csv` |
 | 3  | test-case-review  | *(gate verdict shown inline — optional notes in `03-test-case-review.md`, which must NOT push later numbers)* |
 | 4  | env-setup         | `03-env-check.md` |
 | 5  | run               | `04-run-results.json` (+ `evidence/`) |
@@ -78,6 +78,23 @@ name and silently drifts if an earlier phase inserts an extra numbered file.
   layer (list/detail rendering, status labels, entity names, control states): add UI cases in
   test-cases, run them in the browser, and automate at least the observable outcome. API-first
   is for depth; the FE layer is not optional.
+- **Read the source code; the user story rules.** Read the feature's implementation
+  (read-only) to sharpen accuracy — real endpoints, status codes, evaluation order, error
+  branches — but the **user story / AC is always the authority** and **source is never
+  modified**. If the code contradicts the story, that's a candidate defect, not the spec.
+- **Create test data proactively — never wait for the tester.** Manufacture what the cases
+  need through the real product flow, using every resource: source code, memory, the repo's
+  **automation packs / POMs / fixtures**, mock servers, and the DB relay. Record IDs as
+  reusable fixtures; clean up at closure. (Forging domain results in the DB stays off-limits.)
+- **Understand the neighbourhood first.** Before planning, read the target story's
+  **related / linked Jira stories** (epic, siblings, downstream consumers) to grasp context
+  and fill scope gaps — not just the one ticket.
+- **Record outcomes on the story.** After defects are filed (defect-log), comment on the
+  target story listing the bugs it produced (keys + links), so the story itself carries the
+  testing result.
+- **Learn from experience (continuous).** For a high-complexity story, consult the patterns
+  library maintained by `/stlc-pattern-harvest`; at closure, harvest any new reusable pattern
+  from the run back into it.
 
 ### Lessons carried from the JF-844 test-drive (2026-07)
 - **Verify findings at the layer the user experiences before filing.** Two API-level

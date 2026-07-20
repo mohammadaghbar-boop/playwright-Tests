@@ -10,7 +10,11 @@ allowed-tools: Read, Write, Grep
 ## Author test cases for $story
 
 Base them on the story + the gap analysis (`qa-artifacts/$story/01-gap-comment.md`) and
-the test plan (`qa-artifacts/$story/00-test-plan.md`) if present.
+the test plan (`qa-artifacts/$story/00-test-plan.md`) if present. Read the feature's
+**source code** (read-only) to make steps and expected results accurate to real behaviour
+(endpoints, statuses, validation branches) — but keep the **story / AC as the authority**.
+For high-complexity stories, apply the heuristics in the patterns library
+(`/stlc-pattern-harvest`).
 
 ### Coverage — all three categories, explicitly
 - **Happy path** — the feature working as intended, main flows.
@@ -31,7 +35,8 @@ Map every case to the acceptance criterion or gap it covers. Note any AC with **
 (a coverage gap) and add cases until every AC is covered.
 
 ### Export to AIO CSV
-Write `qa-artifacts/$story/02-test-cases-AIO.csv` in the exact AIO import format — see
+Write `qa-artifacts/$story/02-$story-TestCases-AIO.csv` (story ID in the filename) in the
+exact AIO import format — see
 `${CLAUDE_SKILL_DIR}/reference/aio-format.md`. Key points: columns
 `Test Id,Summary,Priority,TestSteps,ExpectedResults,Story,Test Type,Component,Release,Status,Creator`;
 multi-step cases put each extra step on its own row with **only the TestSteps column**

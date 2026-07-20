@@ -9,7 +9,7 @@ allowed-tools: Read, Write, Edit, Grep, Bash
 
 ## Execute test cases for $story
 
-Run the approved cases from `qa-artifacts/$story/02-test-cases-AIO.csv`. Prefer API-first
+Run the approved cases from `qa-artifacts/$story/02-$story-TestCases-AIO.csv`. Prefer API-first
 execution for depth/speed, but **for any user-facing story you must also confirm the
 user-visible outcome in the browser** — API/DB-green does not prove the screen is correct.
 Drive the real portal (msedge channel) for at least the observable result of each

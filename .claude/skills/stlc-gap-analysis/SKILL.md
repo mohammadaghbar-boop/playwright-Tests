@@ -14,6 +14,13 @@ Use the Atlassian (Jira) MCP tools to fetch the full picture of **$story**:
 - The issue itself (description, acceptance criteria, status, fields).
 - **All linked issues** (blocks, relates to, epics, sub-tasks) — fetch their details too.
 - **All comments** on the story and relevant linked issues.
+- **Related stories beyond the direct links** — the epic, sibling stories in the same
+  feature, and downstream consumers; search Jira by feature/component to find them and read
+  enough to understand how $story fits and where its edges are.
+- **The feature's source code** (read-only) — read the implementation to spot gaps between
+  what the story *requires* and what's *built*. Requirements are authoritative: if the code
+  diverges from the story, that's a gap/defect to note, not the source of truth. **Never
+  modify source code.**
 
 If any tool isn't available/authorized, say so and ask the user to enable it — don't guess.
 
