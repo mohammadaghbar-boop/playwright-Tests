@@ -22,7 +22,7 @@ function isFresh(file: string): boolean {
  */
 async function saveAuth(outFile: string, login: (page: import('@playwright/test').Page) => Promise<void>): Promise<void> {
   if (isFresh(outFile)) return;
-  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ locale: 'ar-SA' });
   const page = await context.newPage();
   try {

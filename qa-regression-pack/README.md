@@ -35,7 +35,10 @@ src/
 ```bash
 npm install                      # uses its own package.json
 cp .env.example .env             # optional; PD demo fallback works without it
-npx playwright test              # full pack (msedge channel — no browser download needed)
+npm install && npx playwright install chromium   # first time only (bundled Chromium)
+npx playwright test              # full pack (bundled Chromium)
+npm run test:headed              # watch the browser drive the app
+npm run test:backlog             # run the whole-system coverage map (809 scenarios, pending stubs)
 npx playwright test --grep @blocker   # release-gate subset only
 npx playwright show-report
 ```

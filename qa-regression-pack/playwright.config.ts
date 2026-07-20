@@ -6,9 +6,9 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
  * JF Regression Pack — self-contained config.
- * Uses the system Edge channel so no Playwright browser download is required
- * (the CIT QA machines already have Edge; this also matches the main suite's
- * Desktop Edge projects).
+ * Runs on Playwright's own **bundled Chromium** (run `npx playwright install chromium`
+ * once). Use `npm run test:headed` to watch the browser drive the app live, and
+ * `SLOWMO=500 npx playwright test --headed <spec>` to slow it down for demos.
  */
 export default defineConfig({
   testDir: './tests',
@@ -29,19 +29,21 @@ export default defineConfig({
     trace: 'retain-on-failure',
     video: 'off',
     screenshot: 'off', // team policy: no screenshots
+    // Optional slow-motion for headed demo runs: SLOWMO=500 npx playwright test --headed
+    launchOptions: { slowMo: Number(process.env.SLOWMO) || 0 },
   },
   projects: [
     {
       name: 'public',
       testMatch: ['08-public/**/*.spec.ts'],
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+      use: { ...devices['Desktop Chrome'], channel: undefined },
     },
     {
       name: 'internal', // PD / internal-portal specs
       testMatch: ['01-auth/**/*.spec.ts', '02-admin/**/*.spec.ts', '04-estate-core/**/*.spec.ts', '06-assets-classification/**/*.spec.ts', '09-erp-integrations/**/*.spec.ts'],
       use: {
-        ...devices['Desktop Edge'],
-        channel: 'msedge',
+        ...devices['Desktop Chrome'],
+        channel: undefined,
         storageState: '.auth/pd.json',
       },
     },
@@ -49,8 +51,8 @@ export default defineConfig({
       name: 'service-provider',
       testMatch: ['03-sp-lifecycle/**/*.spec.ts'],
       use: {
-        ...devices['Desktop Edge'],
-        channel: 'msedge',
+        ...devices['Desktop Chrome'],
+        channel: undefined,
         storageState: '.auth/sp.json',
       },
     },
@@ -58,8 +60,8 @@ export default defineConfig({
       name: 'liquidator',
       testMatch: ['07-liquidator/**/*.spec.ts'],
       use: {
-        ...devices['Desktop Edge'],
-        channel: 'msedge',
+        ...devices['Desktop Chrome'],
+        channel: undefined,
         storageState: '.auth/liquidator.json',
       },
     },
@@ -67,8 +69,8 @@ export default defineConfig({
       name: 'heir',
       testMatch: ['05-heirs/**/*.spec.ts'],
       use: {
-        ...devices['Desktop Edge'],
-        channel: 'msedge',
+        ...devices['Desktop Chrome'],
+        channel: undefined,
         storageState: '.auth/heir.json',
       },
     },

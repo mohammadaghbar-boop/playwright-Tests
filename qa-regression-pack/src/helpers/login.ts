@@ -105,7 +105,7 @@ export interface LiquidatorApiAuth {
 export async function captureLiquidatorApiAuth(
   nationalId = NATIONAL_IDS.liquidator,
 ): Promise<LiquidatorApiAuth | null> {
-  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  const browser = await chromium.launch({ headless: true });
   try {
     const stateFile = path.resolve(__dirname, '..', '..', '.auth', 'liquidator.json');
     const context = await browser.newContext({
@@ -183,7 +183,7 @@ export async function captureLiquidatorApiAuth(
  * callers can `test.skip` cleanly rather than hard-fail.
  */
 export async function captureDemoPanelToken(email = 'admin@infath.sa'): Promise<string | null> {
-  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  const browser = await chromium.launch({ headless: true });
   try {
     const context = await browser.newContext({ locale: 'ar-SA', ignoreHTTPSErrors: true });
     const page = await context.newPage();

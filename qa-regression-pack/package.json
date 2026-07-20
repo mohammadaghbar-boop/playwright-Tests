@@ -5,7 +5,10 @@
   "description": "Post-deployment regression testing pack for the Infath Joint Funds portal (CIT)",
   "scripts": {
     "test": "playwright test",
+    "test:headed": "playwright test --headed",
     "test:gate": "playwright test --grep @blocker",
+    "test:backlog": "playwright test --config=playwright.backlog.config.ts",
+    "test:backlog:list": "playwright test --config=playwright.backlog.config.ts --list",
     "test:list": "playwright test --list",
     "report": "playwright show-report",
     "typecheck": "tsc --noEmit"
