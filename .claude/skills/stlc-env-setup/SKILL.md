@@ -17,8 +17,10 @@ Checklist (do the relevant ones):
 1. **`.env`** — ensure required keys exist (portal `BASE_URL`, `CB_*` for the CloudBeaver
    DB relay, any API tokens). Never commit `.env`; never print secret values. If a key is
    missing, ask the user to supply it.
-2. **Portal reachability** — confirm the CIT/Dev portal responds and the needed demo
-   user/role can log in.
+2. **Portal reachability + browser login** — confirm the CIT/Dev portal responds and that
+   the needed role can actually **log in through the browser** (the real login flow —
+   email/password or Nafath mock — on the `msedge` channel), not just that an API token
+   works. FE cases depend on a working UI session.
 3. **DB relay** — if cases assert DB state, confirm the CloudBeaver relay
    (`Automation-Tests/utils/db-client.ts`) can run a trivial `SELECT 1`. Remember: only
    `SELECT`/`UPDATE` are allowed; results come back as strings.

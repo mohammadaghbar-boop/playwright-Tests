@@ -73,6 +73,11 @@ name and silently drifts if an earlier phase inserts an extra numbered file.
   precondition, the case is **blocked** (usually by a logged bug), not a pass. Timestamp-
   aging for time-based ACs (48h) is a legitimate technique; forging classifications or
   domain results directly in the DB is not.
+- **Test the FE/UI, not just the API/DB — for every user-facing story.** API/DB-green proves
+  the backend, not the user's screen. Each user-facing story must be verified at the browser
+  layer (list/detail rendering, status labels, entity names, control states): add UI cases in
+  test-cases, run them in the browser, and automate at least the observable outcome. API-first
+  is for depth; the FE layer is not optional.
 
 ### Lessons carried from the JF-844 test-drive (2026-07)
 - **Verify findings at the layer the user experiences before filing.** Two API-level
@@ -129,3 +134,12 @@ name and silently drifts if an earlier phase inserts an extra numbered file.
   conflict) — use a `qa/…` prefix. gh auth via the GCM token piped through `GH_TOKEN`.
 - **Persist and extract large tool outputs.** Oversized Jira/API responses: save to file and
   slice with `jq`/node, don't dump into context.
+- **The FE was the gap — cover it as a first-class layer.** JF-172/363 first shipped with
+  API/DB-only specs; the estate manager's actual screen (assigned liquidator name; status
+  «حصر التركة» after accept vs «اسناد التركة» after reject) was never exercised until a
+  browser spec closed it. JF-portal Playwright gotchas: **`trace: 'off'`** (a persistent
+  SignalR socket stalls trace-finalization on teardown — tests pass their body then hang to
+  the timeout, truncated trace.zip; run log = evidence; `DEBUG=pw:api` isolates it); supply
+  **`baseURL`** (POMs are relative); run via a **scoped config that skips the Nafath
+  `globalSetup`**; **explore-then-assert** the real DOM before writing selectors. Verify
+  read-only against real evidence records when the action is blocker-gated.

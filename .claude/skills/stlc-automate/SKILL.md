@@ -20,6 +20,19 @@ passing cases and the exact steps that produced them) — not the exploratory at
   `waitForTimeout`/`networkidle`. (See the audit's restructure conventions.)
 - Evidence/artifacts: rely on Playwright trace/video; **never screenshots**.
 
+### Cover the FE / UI layer (not just API)
+For user-facing stories, author a browser spec (POM) for the observable outcome, not only
+API/DB guards. Practical notes for the JF portal:
+- **Explore-then-assert** — discover the real DOM (login flow, list, detail) with a
+  throwaway read-only script before writing selectors; don't guess.
+- **Supply `baseURL`** via `test.use` or a scoped config (POMs use relative paths).
+- **`trace: 'off'`** for portal UI specs — a persistent SignalR socket stalls Playwright
+  trace-finalization on teardown, so tests *pass their body then hang* to the timeout (and
+  write a truncated trace.zip). The run log is the evidence; `DEBUG=pw:api` tells a body
+  failure from a teardown hang.
+- When the interactive action is blocker-gated, verify read-only against real evidence
+  records and keep the action itself as a `test.fixme` tagged to the blocker.
+
 ### Verify before handing off
 Run the new spec and confirm it is **green** locally (discovery + actual run). A spec that
 isn't verified green does not proceed. If parts can't pass yet (pending dev / data), mark
