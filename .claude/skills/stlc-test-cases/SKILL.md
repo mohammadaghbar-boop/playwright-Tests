@@ -17,6 +17,11 @@ the test plan (`qa-artifacts/$story/00-test-plan.md`) if present.
 - **Unhappy path** — invalid input, wrong permissions, rejected actions, error states.
 - **Edge cases** — boundaries, empty/max data, concurrency, timeouts, unusual sequences.
 
+**Cover the layer the user sees.** For any user-facing story, include explicit **FE/UI
+cases** (browser), not only API/DB — every user-visible outcome (list/detail rendering,
+status labels, entity names, enabled/disabled controls) gets at least one UI case.
+API-green ≠ the user's screen is correct.
+
 Each case: a clear **Summary**, a **Priority** (High/Medium/Low), numbered **step-by-step
 TestSteps**, and a precise **ExpectedResult**. Steps must be concrete enough that someone
 else could execute them without asking you.
