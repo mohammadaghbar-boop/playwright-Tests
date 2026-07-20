@@ -1,0 +1,8 @@
+
+Running 3 tests using 1 worker
+
+  ✓  1 Automation-Tests\JF-172-363-liquidator-assignment-ui.spec.ts:51:7 › JF-172 / JF-363 — liquidator assignment (FE / UI) › JF-172 · accepted estate surfaces its assigned liquidator in the estates list (8.1s)
+  ✓  2 Automation-Tests\JF-172-363-liquidator-assignment-ui.spec.ts:67:7 › JF-172 / JF-363 — liquidator assignment (FE / UI) › JF-363 · rejected estate shows no active liquidator and is back in assignment (7.6s)
+  ✓  3 Automation-Tests\JF-172-363-liquidator-assignment-ui.spec.ts:81:7 › JF-172 / JF-363 — liquidator assignment (FE / UI) › JF-363 · estate detail exposes the liquidator only for the accepted estate (10.6s)
+
+  3 passed (30.8s)
