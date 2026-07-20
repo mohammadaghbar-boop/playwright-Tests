@@ -9,7 +9,7 @@ allowed-tools: Read, Grep
 
 ## Review test cases for $story
 
-Read `qa-artifacts/$story/02-test-cases-AIO.csv` (and the story/gap analysis). Run this
+Read `qa-artifacts/$story/02-$story-TestCases-AIO.csv` (and the story/gap analysis). Run this
 checklist and report a concise pass/fix list — do **not** silently rewrite the author's cases.
 
 **Checklist**

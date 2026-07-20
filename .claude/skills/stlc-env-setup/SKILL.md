@@ -31,9 +31,13 @@ Record what's available vs blocked in `qa-artifacts/$story/03-env-check.md`. If 
 needed can't be provisioned with the access we have, flag it — those cases will later be
 classified **Requires dev support**. Never target production.
 
-### When the env has no usable test data
-Prefer to **manufacture it through the real product flow** rather than skipping the positive
-cases. If a fixture (e.g. an issued letter, an accepted case) doesn't exist and the DB relay
-is read/UPDATE-only, create it via the actual UI/API path (the same steps a real user takes),
-then **record the exact IDs as a reusable fixture** in `03-env-check.md` and note it for
-**cleanup at closure**. Don't fabricate results and don't silently drop coverage.
+### Create the test data yourself — don't wait for the tester
+**Proactively manufacture any data the cases need** rather than skipping positive cases or
+handing the job back to a human. Use **every available resource**: the feature's **source
+code** (to know exactly how a valid record is created), the repo's **automation packs / POMs
+/ fixtures**, the **mock servers**, the **DB relay** (SELECT/UPDATE), and prior **memory** of
+working fixtures. Always create through the **real product flow** (the same steps a real
+user/API takes). **Record the exact IDs as a reusable fixture** in `03-env-check.md` and
+schedule **cleanup at closure**. Timestamp-aging for time-based ACs (48h) is legitimate;
+**forging classifications/domain results directly in the DB is not**. Only when creation is
+genuinely impossible with our access is a case **Requires dev support** — say precisely why.

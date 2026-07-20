@@ -28,6 +28,7 @@ run individually (`/stlc-<name> JF-123`) or chained end-to-end by the
 | 12 | `/stlc-sync-pr` | Pull/sync → isolated branch/worktree → commit → PR | ✋ side-effect |
 | 13 | `/stlc-closure` | Final report + metrics + lessons; transition story; exit criteria | |
 | — | `/stlc-orchestrator` | Runs the whole pipeline for one story ID, pausing at every ✋ | |
+| — | `/stlc-pattern-harvest` | Meta/continuous: extract reusable testing patterns from past testing chats into a library the orchestrator + judgment phases consult (esp. high-complexity stories) | |
 
 ## House rules baked into every skill
 - **No screenshots.** Evidence is text/logs/Playwright traces only (team policy, hook-enforced).
