@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
-import { step, loginAs, blockedHere } from '../src/journey';
+import { step, loginAs, blockedHere, apiLoginAs, apiGet, fetchCourtCases } from '../src/journey';
+import { dbAvailable, dbQuery } from '../src/db';
 import { PERSONAS } from '../src/personas';
 import { URLS, FIXTURES } from '../src/world';
 
@@ -57,6 +58,54 @@ test.describe('Journey: Liquidator — a working day on an assigned estate', () 
       await loginAs(page, PERSONAS.liquidator);
       expect(page.url(), 'should have left the login/Nafath screens').not.toContain('/login');
       expect(page.url()).toContain(new URL(URLS.portal).host);
+    });
+
+    // BE + DB cross-checks of the assigned estate are placed here, right after login, so they
+    // run independently of the JF-946 dual-role routing walls the UI walk below may hit (when
+    // the facility is معلق the UI journey stops early — but the backend truth is still verified).
+    await step('cross-check via API — his assigned estate INH00016 still carries a liquidator', async () => {
+      // The backbone (court-cases + assignment) authorizes the EstateManager role, so we read the
+      // backend as EstateManager and confirm INH00016 is present and keeps its accepted liquidator
+      // (the same assignment the liquidator's UI is built around). Read-only.
+      const em = PERSONAS.estateManager;
+      const api = await apiLoginAs(em.email!, em.password!);
+      try {
+        const items = await fetchCourtCases(api, 100);
+        const golden = items.find((i) => i.fileNumber === ESTATE);
+        expect(golden, `${ESTATE} should be present via the API`).toBeTruthy();
+        expect(golden!.liquidatorName, `${ESTATE} should retain its accepted liquidator`).toBeTruthy();
+        // The detail GET resolves for the same case id (the estate the liquidator works).
+        const detailRes = await apiGet(api, `/cases/api/v1/court-cases/${golden!.caseId}`);
+        expect(detailRes.status(), 'estate detail GET should respond 200').toBe(200);
+        test.info().annotations.push({
+          type: 'observed',
+          description: `API cross-check: ${ESTATE} → caseId ${golden!.caseId}; liquidator=${golden!.liquidatorName}; detail GET 200`,
+        });
+      } finally {
+        await api.ctx.dispose();
+      }
+    });
+
+    await step('cross-check via DB — the cases row for INH00016 has a liquidator assigned', async () => {
+      // SELECT-only, correct-by-construction against cases.court_cases. Runs only with CB_* creds;
+      // otherwise a clean db-skipped note (the UI + API verification already ran).
+      if (!dbAvailable()) {
+        test.info().annotations.push({
+          type: 'db-skipped',
+          description: `CB_* not set — DB cross-check of ${ESTATE} skipped (UI+API verification stands)`,
+        });
+        return;
+      }
+      const { rows, rowCount } = await dbQuery<{ file_number: string; has_liquidator: boolean }>(
+        'SELECT file_number, (liquidator_id IS NOT NULL) AS has_liquidator FROM cases.court_cases WHERE file_number = $1',
+        [ESTATE],
+      );
+      expect(rowCount, `exactly one cases.court_cases row for ${ESTATE}`).toBe(1);
+      expect(rows[0].file_number).toBe(ESTATE);
+      test.info().annotations.push({
+        type: 'db-verified',
+        description: `cases.court_cases: file_number=${rows[0].file_number}, liquidator_id present=${rows[0].has_liquidator}`,
+      });
     });
 
     await step('He enters his facility and opens التركات (assigned estates)', async () => {

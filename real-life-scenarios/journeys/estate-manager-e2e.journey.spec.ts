@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test';
-import { step, loginAs } from '../src/journey';
+import { step, loginAs, apiLoginAs, apiGet, fetchCourtCases } from '../src/journey';
+import { dbAvailable, dbQuery } from '../src/db';
 import { PERSONAS } from '../src/personas';
 import { URLS, FIXTURES } from '../src/world';
 
@@ -168,6 +169,61 @@ test.describe('Journey: Estate Manager — works a new estate file', () => {
       // Confirm the manager reached and read the estate's financial section (label present),
       // regardless of whether a number or "-" is shown.
       await expect(main.getByText('القيمة التقديرية', { exact: false }).first()).toBeVisible();
+    });
+
+    await step('7. cross-check via API — the estate on screen matches the backend record', async () => {
+      // The estates list + detail the manager just read are served by the court-cases API.
+      // Sign into the backend as the same EstateManager and assert the estate the UI opened
+      // is present with the same file number + auto-assigned managers (JF-155/156 columns).
+      const api = await apiLoginAs(em.email!, em.password!);
+      try {
+        const items = await fetchCourtCases(api, 100);
+        expect(items.length, 'the backend should return the seeded estates').toBeGreaterThan(0);
+
+        const match = items.find((i) => i.fileNumber === openedFile);
+        expect(match, `estate ${openedFile} (seen in the UI) should exist via the API`).toBeTruthy();
+        expect(match!.fileNumber).toBe(openedFile);
+        // The manager columns the detail page showed are the same the API returns.
+        expect(match, 'API item carries the estate-manager field').toHaveProperty('estateManagerName');
+        expect(match, 'API item carries the relationship-manager field').toHaveProperty('relationshipManagerName');
+
+        // The detail GET resolves for the same case id (the tabs the manager walked).
+        const detailRes = await apiGet(api, `/cases/api/v1/court-cases/${match!.caseId}`);
+        expect(detailRes.status(), 'estate detail GET should respond 200').toBe(200);
+        expect((await detailRes.json())?.isSuccess, 'estate detail isSuccess').toBeTruthy();
+        test.info().annotations.push({
+          type: 'observed',
+          description:
+            `API cross-check: estate ${openedFile} → caseId ${match!.caseId}; ` +
+            `classification ${match!.classification ?? '-'}; ` +
+            `EM=${match!.estateManagerName ?? '?'} RM=${match!.relationshipManagerName ?? '?'}; detail GET 200`,
+        });
+      } finally {
+        await api.ctx.dispose();
+      }
+    });
+
+    await step('8. cross-check via DB — the cases row matches the on-screen file number', async () => {
+      // DB layer: SELECT-only, correct-by-construction against cases.court_cases. Runs only
+      // when the CloudBeaver-relay CB_* creds exist; otherwise records a clean db-skipped note
+      // (the UI + API parts above already ran, so the journey is not skipped).
+      if (!dbAvailable()) {
+        test.info().annotations.push({
+          type: 'db-skipped',
+          description: `CB_* not set — DB cross-check of estate ${openedFile} skipped (UI+API verification stands)`,
+        });
+        return;
+      }
+      const { rows, rowCount } = await dbQuery<{ file_number: string; classification: string | null }>(
+        'SELECT file_number, classification FROM cases.court_cases WHERE file_number = $1',
+        [openedFile],
+      );
+      expect(rowCount, `exactly one cases.court_cases row for ${openedFile}`).toBe(1);
+      expect(rows[0].file_number).toBe(openedFile);
+      test.info().annotations.push({
+        type: 'db-verified',
+        description: `cases.court_cases: file_number=${rows[0].file_number}, classification=${rows[0].classification ?? '-'}`,
+      });
     });
   });
 });

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { step, loginAs } from '../src/journey';
+import { step, loginAs, apiLoginAs, fetchCourtCases } from '../src/journey';
+import { dbAvailable, dbQuery } from '../src/db';
 import { PERSONAS } from '../src/personas';
 import { URLS } from '../src/world';
 
@@ -17,6 +18,7 @@ import { URLS } from '../src/world';
 test.describe('Journey: Relationship manager — review the day\'s workload', () => {
   test('an RM reads the dashboard, works the incoming inquiries, and opens an estate', async ({ page }) => {
     const rm = PERSONAS.relationshipManager;
+    let openedEstate = '';
 
     await step('1. The RM signs in and lands on the dashboard shell', async () => {
       await loginAs(page, rm);
@@ -86,6 +88,7 @@ test.describe('Journey: Relationship manager — review the day\'s workload', ()
       await expect(firstRow).toBeVisible({ timeout: 20_000 });
       const estateNumber = (await firstRow.locator('td').first().innerText()).trim();
       expect(estateNumber, 'the first estate row should carry an estate number').not.toBe('');
+      openedEstate = estateNumber;
 
       // Open that estate's details and confirm the drill-through renders its data.
       const viewBtn = firstRow.getByRole('button', { name: 'عرض' });
@@ -104,6 +107,51 @@ test.describe('Journey: Relationship manager — review the day\'s workload', ()
           description: `Estates list rendered (first estate ${estateNumber}); no row-level عرض action was exposed to drill in.`,
         });
       }
+    });
+
+    await step('4. cross-check via API — the estate the RM opened matches the backend record', async () => {
+      // The estates list/detail the RM just read are served by the court-cases API. Sign into the
+      // backend as the same RM and assert that estate is present with the manager fields the UI shows.
+      const fileNo = (openedEstate.match(/INH\d+/) ?? [openedEstate])[0];
+      const api = await apiLoginAs(rm.email!, rm.password!);
+      try {
+        const items = await fetchCourtCases(api, 100);
+        expect(items.length, 'the backend should return estates for this RM').toBeGreaterThan(0);
+        const match = items.find((i) => i.fileNumber === fileNo || (!!i.fileNumber && openedEstate.includes(i.fileNumber)));
+        expect(match, `estate ${fileNo} (seen in the UI) should exist via the API`).toBeTruthy();
+        expect(match, 'API item carries the relationship-manager field').toHaveProperty('relationshipManagerName');
+        test.info().annotations.push({
+          type: 'observed',
+          description:
+            `API cross-check: estate ${match!.fileNumber} → caseId ${match!.caseId}; ` +
+            `RM=${match!.relationshipManagerName ?? '?'} EM=${match!.estateManagerName ?? '?'}`,
+        });
+      } finally {
+        await api.ctx.dispose();
+      }
+    });
+
+    await step('5. cross-check via DB — the cases row matches the estate on screen', async () => {
+      // SELECT-only, correct-by-construction against cases.court_cases. Runs only with CB_* creds,
+      // otherwise records a clean db-skipped note (UI + API verification above already ran).
+      const fileNo = (openedEstate.match(/INH\d+/) ?? [openedEstate])[0];
+      if (!dbAvailable()) {
+        test.info().annotations.push({
+          type: 'db-skipped',
+          description: `CB_* not set — DB cross-check of estate ${fileNo} skipped (UI+API verification stands)`,
+        });
+        return;
+      }
+      const { rows, rowCount } = await dbQuery<{ file_number: string; classification: string | null }>(
+        'SELECT file_number, classification FROM cases.court_cases WHERE file_number = $1',
+        [fileNo],
+      );
+      expect(rowCount, `exactly one cases.court_cases row for ${fileNo}`).toBe(1);
+      expect(rows[0].file_number).toBe(fileNo);
+      test.info().annotations.push({
+        type: 'db-verified',
+        description: `cases.court_cases: file_number=${rows[0].file_number}, classification=${rows[0].classification ?? '-'}`,
+      });
     });
   });
 });

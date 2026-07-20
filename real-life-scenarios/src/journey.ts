@@ -1,6 +1,6 @@
 import { Page, expect, test, APIRequestContext, request as pwRequest } from '@playwright/test';
 import { Persona } from './personas';
-import { URLS, KNOWN_BLOCKERS } from './world';
+import { URLS, KNOWN_BLOCKERS, TENANT_ID } from './world';
 
 /**
  * Journey helpers — the shared vocabulary every real-life journey is written in.
@@ -140,4 +140,101 @@ export async function loginAs(page: Page, persona: Persona): Promise<void> {
 /** A standalone API context (for reading the SMS mock, etc.). */
 export function apiContext(): Promise<APIRequestContext> {
   return pwRequest.newContext({ ignoreHTTPSErrors: true });
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * BE (API) VERIFICATION — cross-check, through the backend API, the same data a
+ * persona just saw in the UI. Read-only: journeys only GET with these helpers.
+ * Verified endpoint shapes (CIT):
+ *   POST /users/api/v1/auth/login { Email, Password } -> data.accessToken
+ *   GET  /cases/api/v1/court-cases?pageIndex&pageSize -> isSuccess, data.items[]
+ *        item shape: { caseId, fileNumber, classification,
+ *                      estateManagerName, relationshipManagerName, liquidatorName }
+ *   GET  /cases/api/v1/court-cases/{caseId}          -> isSuccess, data (detail)
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** An authenticated backend session — reusable request context + bearer token. */
+export interface ApiSession {
+  ctx: APIRequestContext;
+  token: string;
+}
+
+/** Tenant + optional-bearer headers every backend call carries. */
+function apiHeaders(token?: string): Record<string, string> {
+  const h: Record<string, string> = {
+    TenantIdentifier: TENANT_ID,
+    'Content-Type': 'application/json',
+    'Accept-Language': 'ar-SA',
+  };
+  if (token) h.Authorization = `Bearer ${token}`;
+  return h;
+}
+
+/** Log into the backend (email + password) and return an authenticated session. */
+export async function apiLoginAs(email: string, password: string): Promise<ApiSession> {
+  const ctx = await pwRequest.newContext({ ignoreHTTPSErrors: true });
+  const res = await ctx.post(`${URLS.api}/users/api/v1/auth/login`, {
+    headers: apiHeaders(),
+    data: { Email: email, Password: password },
+  });
+  if (!res.ok()) throw new Error(`API login failed for ${email}: HTTP ${res.status()}`);
+  const body = await res.json();
+  const token: string = body?.data?.accessToken ?? '';
+  if (!token) throw new Error(`API login for ${email} returned no accessToken`);
+  return { ctx, token };
+}
+
+/** Build an authenticated session from an already-obtained bearer token (e.g. one
+ *  scraped from a demo-panel UI login whose password isn't available to log in with). */
+export async function apiSessionFromToken(token: string): Promise<ApiSession> {
+  const ctx = await pwRequest.newContext({ ignoreHTTPSErrors: true });
+  return { ctx, token };
+}
+
+/** GET a backend path with the session's tenant + bearer headers. */
+export function apiGet(session: ApiSession, path: string) {
+  return session.ctx.get(`${URLS.api}${path}`, { headers: apiHeaders(session.token) });
+}
+
+/** Scrape the SPA's bearer token from the logged-in page (localStorage/sessionStorage).
+ *  Lets a UI-only login (Nafath / demo-panel) hand off to the backend for a cross-check. */
+export async function tokenFromPage(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const scan = (st: Storage): string | null => {
+      for (let i = 0; i < st.length; i++) {
+        const k = st.key(i);
+        const v = k ? st.getItem(k) : null;
+        if (!v) continue;
+        if (/^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\./.test(v.trim())) return v.trim();
+        try {
+          const o = JSON.parse(v) as Record<string, unknown>;
+          const t = (o?.access_token || o?.accessToken || o?.token || o?.id_token) as string | undefined;
+          if (typeof t === 'string' && t.startsWith('eyJ')) return t;
+        } catch {
+          /* not JSON — ignore */
+        }
+      }
+      return null;
+    };
+    return scan(window.localStorage) || scan(window.sessionStorage) || '';
+  });
+}
+
+/** Shape of a court-case list item (the fields the journeys cross-check). */
+export interface CourtCaseListItem {
+  caseId?: string;
+  fileNumber?: string;
+  classification?: string | null;
+  estateManagerName?: string | null;
+  relationshipManagerName?: string | null;
+  liquidatorName?: string | null;
+}
+
+/** Fetch a page of court-cases and return the items array (read-only). */
+export async function fetchCourtCases(session: ApiSession, pageSize = 100): Promise<CourtCaseListItem[]> {
+  const res = await apiGet(session, `/cases/api/v1/court-cases?pageIndex=1&pageSize=${pageSize}`);
+  expect(res.status(), 'court-cases list should respond 200').toBe(200);
+  const body = await res.json();
+  expect(body?.isSuccess, 'court-cases list isSuccess').toBeTruthy();
+  return (body?.data?.items ?? []) as CourtCaseListItem[];
 }

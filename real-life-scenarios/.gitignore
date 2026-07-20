@@ -4,3 +4,12 @@ test-results/
 playwright-report/
 evidence/
 .env
+
+# QA artifacts — local-only, never committed (see MAINTENANCE.md)
+docs/
+*DEFECTS-LOG*.md
+*TEST-CYCLE-REPORT*.md
+*DRAFT-JIRA*.md
+*BUGS-SIMPLE*.md
+*LIQUIDATOR-BUILD*.md
+SYSTEM-UNDERSTANDING.md

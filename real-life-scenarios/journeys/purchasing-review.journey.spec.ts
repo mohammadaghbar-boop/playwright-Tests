@@ -114,5 +114,42 @@ test.describe('Journey: Purchasing employee — review a service-provider regist
       // Safety net: we must still be on the facility detail — nothing was submitted/navigated away.
       await expect(page).toHaveURL(/service-providers-list/, { timeout: 20_000 });
     });
+
+    await step('cross-check via API — the facilities list on screen is a real backend response', async () => {
+      // The purchasing list is API-backed. Rather than hardcode an endpoint, observe the actual
+      // backend GET the app fires when the list loads and assert it returned a 200 page of
+      // facilities — the same data the purchaser just reviewed. Read-only (a GET reload).
+      const apiHost = new URL(URLS.api).host;
+      const seen: Array<{ url: string; status: number; count: number }> = [];
+      const onResponse = async (r: import('@playwright/test').Response): Promise<void> => {
+        try {
+          if (!r.url().includes(apiHost) || r.request().method() !== 'GET') return;
+          if (!/json/i.test(r.headers()['content-type'] ?? '')) return;
+          const body = await r.json().catch(() => null);
+          const items = body?.data?.items ?? body?.data ?? body;
+          if (Array.isArray(items)) seen.push({ url: r.url(), status: r.status(), count: items.length });
+        } catch {
+          /* body already consumed / non-JSON — ignore */
+        }
+      };
+      page.on('response', onResponse);
+      try {
+        await page.goto(`${URLS.portal}/service-providers-list`, { waitUntil: 'domcontentloaded' });
+        await waitForContent(page);
+        await expect
+          .poll(() => seen.filter((s) => s.status === 200 && s.count > 0).length, { timeout: 30_000 })
+          .toBeGreaterThan(0);
+      } finally {
+        page.off('response', onResponse);
+      }
+      const listResp = seen.find((s) => s.status === 200 && s.count > 0)!;
+      test.info().annotations.push({
+        type: 'observed',
+        description: `API cross-check: purchasing list served by ${listResp.url.replace(URLS.api, '')} → 200 with ${listResp.count} facility item(s)`,
+      });
+      // NOTE (DB layer): facilities live outside the team's verified `cases` SELECT corpus
+      // (no grounded facility table among the schema hints), so this journey intentionally does
+      // NOT fabricate a facility DB query — its DB layer is deferred (see MAINTENANCE.md).
+    });
   });
 });
