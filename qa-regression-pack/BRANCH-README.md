@@ -14,14 +14,10 @@ qa-regression-pack/
                     01-auth 02-admin 03-sp-lifecycle 04-estate-core
                     05-heirs 06-assets-classification 07-liquidator 08-public
   tests-backlog/  generated skeletons for ALL 437 JF scenarios (whole-system coverage map)
-  docs/           the cycle's reports (read these for context):
-                    TEST-CYCLE-REPORT.md      consolidated results + closure summary
-                    DEFECTS-LOG.md            every defect + disposition
-                    DRAFT-JIRA-TICKETS.md     the filed tickets (JF-1097..JF-1102 → Saeed)
-                    BUGS-SIMPLE-frontend-steps.md   plain-language repro for each bug
-                    LIQUIDATOR-BUILD.md       how the liquidator account was built E2E
-                    SYSTEM-UNDERSTANDING.md   how the whole system works
 ```
+> **QA artifacts** (test-cycle report, defect log, Jira drafts, system-understanding, etc.)
+> are kept **locally only** and are intentionally **not stored in this repo** (gitignored).
+> The team's QA lead holds them. This repo carries the runnable automation only.
 
 ## How to run
 ```bash
@@ -32,6 +28,8 @@ npx playwright test               # full pack (uses system Edge — no browser d
 npx playwright test --grep @blocker   # release-gate subset only
 npx playwright show-report
 ```
+Coverage spans **FE (UI journeys), BE (API contracts), and DB verification** (the DB layer is
+env-gated on the `CB_*` CloudBeaver-relay creds and skips cleanly when they're absent).
 After a run, read **`regression-report.md`** (generated at the pack root): a GO/NO-GO release
 verdict that separates NEW failures (by BLOCKER/HIGH/MEDIUM) from KNOWN open bugs, and flags
 guards that look "possibly fixed".
