@@ -40,7 +40,7 @@ export default defineConfig({
   projects: [
     {
       name: 'journeys',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+      use: { ...devices['Desktop Chrome'], channel: undefined },
     },
   ],
 });

@@ -38,7 +38,9 @@ journey's result tells you *how far a real user can actually get today*.
 ```bash
 npm install
 cp .env.example .env          # optional — demo defaults work out of the box
-npx playwright test           # all journeys (system Edge — no browser download)
+npx playwright install chromium  # first time only (bundled Chromium)
+npx playwright test           # all journeys (bundled Chromium)
+npm run test:headed           # watch the browser drive each journey
 npx playwright test liquidator-day --reporter=line
 npx playwright show-report    # step-by-step narrated report
 ```
