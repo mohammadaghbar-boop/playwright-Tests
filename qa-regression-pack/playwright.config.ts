@@ -34,8 +34,10 @@ export default defineConfig({
   },
   projects: [
     {
+      // No storageState: hosts the auth-free public specs plus the environment
+      // health probe (00-health.spec.ts), which only pings hosts / reads .health.json.
       name: 'public',
-      testMatch: ['08-public/**/*.spec.ts'],
+      testMatch: ['00-health.spec.ts', '08-public/**/*.spec.ts'],
       use: { ...devices['Desktop Chrome'], channel: undefined },
     },
     {

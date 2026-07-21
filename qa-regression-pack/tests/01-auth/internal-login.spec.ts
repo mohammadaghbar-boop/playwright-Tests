@@ -7,7 +7,7 @@ import { URLS } from '../../src/helpers/users';
 test.use({ storageState: { cookies: [], origins: [] } });
 
 test.describe('Internal portal authentication', () => {
-  test('@blocker valid PD login reaches the portal shell', async ({ page }) => {
+  test('@smoke @blocker valid PD login reaches the portal shell', async ({ page }) => {
     await loginInternal(page);
     await expect(page).not.toHaveURL(/\/login/);
     // Portal shell renders a navigation region once authenticated.

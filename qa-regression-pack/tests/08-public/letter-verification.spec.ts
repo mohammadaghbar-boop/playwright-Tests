@@ -18,7 +18,7 @@ function verify(ctx: APIRequestContext, body: unknown) {
 }
 
 test.describe('Public letter verification (JF-844)', () => {
-  test('@high unknown letter number is rejected without leaking info', async ({ request }) => {
+  test('@smoke @high unknown letter number is rejected without leaking info', async ({ request }) => {
     const res = await verify(request, { letterNo: 'MK-000-0', deceasedNationalId: '1000000000' });
     expect(res.status()).toBe(400);
     const body = await res.json();

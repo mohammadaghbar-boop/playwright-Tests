@@ -21,7 +21,8 @@ import { dbAvailable, dbQuery } from '../../src/db';
  *    so a run reports them KNOWN, and flips to a real pass once fixed.
  *
  * DB layer (@db, SELECT-only, CB_*-gated → clean-skips): verifies asset rows persist in
- * cases.court_case_assets and the classification value columns on cases.court_cases.
+ * [Case].Assets (linked to the case via [Case].AssetLinks) and the classification value
+ * columns on [Case].CourtCases, against the live Azm_JointFunds SQL Server.
  */
 
 let session: ApiSession;
@@ -100,6 +101,7 @@ interface AssetRow {
   id: string;
   asset_number: string | null;
   status: string | null;
+  asset_category: string | null;
 }
 interface ClassificationRow {
   rank: string | null;
@@ -108,21 +110,38 @@ interface ClassificationRow {
 }
 
 test.describe('06-assets-classification — DB verification (@db)', () => {
-  test('@high @db asset rows persist for the estate (cases.court_case_assets)', async () => {
+  test('@high @db asset rows persist for the estate ([Case].Assets via [Case].AssetLinks)', async () => {
     test.skip(!dbAvailable(), 'DB creds (CB_*) not configured');
     test.skip(!caseId, 'no estate id available from the API');
+    // Live Azm_JointFunds SQL Server: [Case].Assets carries the asset facts, and
+    // [Case].AssetLinks (asset_id, case_id) is the junction that ties an asset to a court
+    // case — there is no court_case_id directly on Assets. Bracket the reserved `Case`
+    // schema. SELECT-only. CloudBeaver returns values as strings.
     const { rows, rowCount } = await dbQuery<AssetRow>(
-      `SELECT id, asset_number, status FROM cases.court_case_assets WHERE court_case_id = $1`,
+      `SELECT a.id AS id, a.asset_number AS asset_number, a.status AS status, a.asset_category AS asset_category
+       FROM [Case].Assets a
+       JOIN [Case].AssetLinks l ON l.asset_id = a.id
+       WHERE l.case_id = $1 AND a.is_deleted = 0 AND l.is_deleted = 0`,
       [caseId!],
     );
-    expect(rowCount, 'asset-rows query executed against cases.court_case_assets').toBeGreaterThanOrEqual(0);
+    expect(rowCount, 'asset-rows query executed against [Case].Assets').toBeGreaterThanOrEqual(0);
     for (const r of rows) {
       expect(r.id, 'each persisted asset row carries an id').toBeTruthy();
     }
-    test.info().annotations.push({ type: 'db', description: `court_case_assets rows for estate ${caseId}: ${rowCount}` });
+    // Meaningful cross-check: bucket the estate's assets by category (real-estate/bank/etc.).
+    const byCategory = new Map<string, number>();
+    for (const r of rows) {
+      const cat = String(r.asset_category ?? 'null');
+      byCategory.set(cat, (byCategory.get(cat) ?? 0) + 1);
+    }
+    const catSummary = [...byCategory.entries()].map(([c, n]) => `${c}:${n}`).join(', ') || 'none';
+    test.info().annotations.push({
+      type: 'db',
+      description: `[Case].Assets rows for estate ${caseId}: ${rowCount} (by asset_category — ${catSummary})`,
+    });
   });
 
-  test('@medium @db classification value columns are readable on cases.court_cases (guards JF-1058)', async () => {
+  test('@medium @db classification value columns are readable on [Case].CourtCases (guards JF-1058)', async () => {
     test.skip(!dbAvailable(), 'DB creds (CB_*) not configured');
     test.skip(!caseId, 'no estate id available from the API');
     // JF-1058: total_classification_score stays 0 (constant estimatedValueImpact) so rank
@@ -131,10 +150,10 @@ test.describe('06-assets-classification — DB verification (@db)', () => {
     annotateKnownIssue(test, 'JF-1058');
     const { rows } = await dbQuery<ClassificationRow>(
       `SELECT rank, total_classification_score, classification_result
-       FROM cases.court_cases WHERE id = $1`,
+       FROM [Case].CourtCases WHERE id = $1`,
       [caseId!],
     );
-    expect(rows.length, 'the estate row exists in cases.court_cases').toBe(1);
+    expect(rows.length, 'the estate row exists in [Case].CourtCases').toBe(1);
     const row = rows[0];
     test.info().annotations.push({
       type: 'db',

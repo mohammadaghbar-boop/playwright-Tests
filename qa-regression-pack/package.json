@@ -7,6 +7,8 @@
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:gate": "playwright test --grep @blocker",
+    "test:smoke": "playwright test --grep @smoke",
+    "seed": "node src/seed.ts",
     "test:backlog": "playwright test --config=playwright.backlog.config.ts",
     "test:backlog:list": "playwright test --config=playwright.backlog.config.ts --list",
     "test:list": "playwright test --list",

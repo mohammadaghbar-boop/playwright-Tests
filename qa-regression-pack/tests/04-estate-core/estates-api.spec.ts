@@ -24,7 +24,7 @@ test.describe('Estate backbone (API)', () => {
     await session?.ctx.dispose();
   });
 
-  test('@blocker estates list responds with a page of cases', async () => {
+  test('@smoke @blocker estates list responds with a page of cases', async () => {
     const res = await apiGet(session, ENDPOINTS.courtCases(1, 10));
     expect(res.status()).toBe(200);
     const body = await res.json();
@@ -40,7 +40,7 @@ test.describe('Estate backbone (API)', () => {
     expect(items[0]).toHaveProperty('relationshipManagerName');
   });
 
-  test('@blocker estate detail loads for a real case', async () => {
+  test('@smoke @blocker estate detail loads for a real case', async () => {
     test.skip(!sampleCaseId, 'no case id from list');
     const res = await apiGet(session, ENDPOINTS.courtCase(sampleCaseId!));
     expect(res.status()).toBe(200);

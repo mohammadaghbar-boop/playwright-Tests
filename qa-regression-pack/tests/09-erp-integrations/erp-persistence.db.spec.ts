@@ -13,10 +13,10 @@ import { dbAvailable, dbQuery } from '../../src/db';
  * the source of truth for the request/response mapping.
  *
  * All tests are @db and CB_*-gated → they clean-skip until DB creds exist. Queries are
- * written correct-by-construction from the confirmed cases-schema hints
- * (Automation-Tests/utils/db-client.ts + jf157-db-client.ts): cases.court_cases is the
- * inheritance record ERP posts, and information_schema tells us whether the ERP-posting
- * persistence surface (erp journal number / posting date / voucher id) has shipped yet.
+ * written against the live Azm_JointFunds SQL Server schema: [Case].CourtCases (the `Case`
+ * schema is a T-SQL reserved word, so it is bracketed) is the inheritance record ERP posts,
+ * and INFORMATION_SCHEMA tells us whether the ERP-posting persistence surface (erp journal
+ * number / posting date / voucher id) has shipped yet.
  */
 
 interface CourtCaseErpSource {
@@ -47,20 +47,20 @@ test.afterAll(async () => {
 });
 
 test.describe('09-erp-integrations — DB verification (@db)', () => {
-  test('@high @db the inheritance record ERP posts persists in cases.court_cases', async () => {
+  test('@high @db the inheritance record ERP posts persists in [Case].CourtCases', async () => {
     test.skip(!dbAvailable(), 'DB creds (CB_*) not configured');
     test.skip(!caseId, 'no estate id available from the API');
     // SendInheritanceToERP (JF-734) sources the deceased national id + inheritance number
     // from the approved court case. Verify that source row is present and complete.
     const { rows } = await dbQuery<CourtCaseErpSource>(
-      `SELECT id, deceased_national_id, status FROM cases.court_cases WHERE id = $1`,
+      `SELECT id, deceased_national_id, status FROM [Case].CourtCases WHERE id = $1`,
       [caseId!],
     );
-    expect(rows.length, 'the inheritance record exists in cases.court_cases').toBe(1);
+    expect(rows.length, 'the inheritance record exists in [Case].CourtCases').toBe(1);
     expect(rows[0].deceased_national_id, 'deceased national id (mapped into the ERP request) is stored').toBeTruthy();
     test.info().annotations.push({
       type: 'db',
-      description: `court_cases ERP source row ${caseId}: status=${rows[0].status}`,
+      description: `[Case].CourtCases ERP source row ${caseId}: status=${rows[0].status}`,
     });
   });
 
@@ -71,14 +71,15 @@ test.describe('09-erp-integrations — DB verification (@db)', () => {
     // posting-date / voucher-id columns (or an accounting_journals table). Probe the live
     // schema for that surface so this test starts VERIFYING persisted values the moment the
     // feature ships — and honestly records its absence until then (no red-fail).
+    // SQL Server dialect: LIKE is case-insensitive under the default collation (no ILIKE).
     const { rows } = await dbQuery<ColumnRow>(
       `SELECT table_schema, table_name, column_name
-       FROM information_schema.columns
-       WHERE table_schema = 'cases'
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE table_schema = 'Case'
          AND (
-           column_name ILIKE '%erp%'
-           OR column_name ILIKE '%journal%'
-           OR column_name ILIKE '%voucher%'
+           column_name LIKE '%erp%'
+           OR column_name LIKE '%journal%'
+           OR column_name LIKE '%voucher%'
          )
        ORDER BY table_name, column_name`,
     );
@@ -87,10 +88,10 @@ test.describe('09-erp-integrations — DB verification (@db)', () => {
       type: 'db',
       description: surface.length
         ? `ERP-posting persistence columns present: ${surface.join(', ')}`
-        : 'no ERP-posting persistence columns in the cases schema yet (JF-707/JF-734 not developed) — DB verification will activate once they ship',
+        : 'no ERP-posting persistence columns in the [Case] schema yet (JF-707/JF-734 not developed) — DB verification will activate once they ship',
     });
     // Correct-by-construction: the probe itself must execute cleanly. If the surface has
-    // shipped, every discovered column belongs to the cases schema.
-    for (const r of rows) expect(r.table_schema).toBe('cases');
+    // shipped, every discovered column belongs to the [Case] schema.
+    for (const r of rows) expect(r.table_schema).toBe('Case');
   });
 });

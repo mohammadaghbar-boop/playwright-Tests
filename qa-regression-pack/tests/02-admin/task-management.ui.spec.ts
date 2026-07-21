@@ -75,24 +75,27 @@ test.describe('Task Management screen (UI)', () => {
       await session?.ctx.dispose();
     }
 
-    // DB side (SELECT-only, defensive): the task-definitions table lives in the tasks
-    // service schema. We do NOT assume its exact name — we discover it from
-    // information_schema (always present), which keeps the query correct-by-construction
-    // regardless of the precise schema/table naming, then count its rows.
+    // DB side (SELECT-only, defensive): in the live Azm_JointFunds SQL Server the
+    // task-definitions table lives in the [Task] service schema (Task.TaskDefinitions). We
+    // do NOT hardcode its exact name — we discover it from INFORMATION_SCHEMA (always
+    // present), which keeps the query correct-by-construction regardless of the precise
+    // schema/table naming, then count its rows. SQL Server dialect: TOP not LIMIT, and LIKE
+    // is case-insensitive under the default collation (no ILIKE).
     const found = await dbQuery<{ table_schema: string; table_name: string }>(
-      `SELECT table_schema, table_name FROM information_schema.tables
-       WHERE table_type = 'BASE TABLE' AND table_name ILIKE '%task%definition%'
-       ORDER BY table_schema LIMIT 1`,
+      `SELECT TOP 1 table_schema, table_name FROM INFORMATION_SCHEMA.TABLES
+       WHERE table_type = 'BASE TABLE' AND table_name LIKE '%Task%Definition%'
+       ORDER BY LEN(table_name), table_name`,
     );
     expect(found.rowCount, 'a task-definitions table should exist in the DB').toBeGreaterThan(0);
 
     const schema = String(found.rows[0].table_schema);
     const table = String(found.rows[0].table_name);
-    // Guard the interpolated identifier (it comes from information_schema, but validate anyway).
+    // Guard the interpolated identifier (it comes from INFORMATION_SCHEMA, but validate anyway).
     expect(schema).toMatch(/^[a-z_][a-z0-9_]*$/i);
     expect(table).toMatch(/^[a-z_][a-z0-9_]*$/i);
 
-    const counted = await dbQuery<{ n: string }>(`SELECT count(*) AS n FROM "${schema}"."${table}"`);
+    // Bracket-quote the discovered identifier (SQL Server delimiter).
+    const counted = await dbQuery<{ n: string }>(`SELECT count(*) AS n FROM [${schema}].[${table}]`);
     const dbCount = Number(counted.rows[0]?.n ?? 0);
     expect(Number.isFinite(dbCount)).toBeTruthy();
     // At least one task-definition row must exist; if the API listed items, the DB must too.

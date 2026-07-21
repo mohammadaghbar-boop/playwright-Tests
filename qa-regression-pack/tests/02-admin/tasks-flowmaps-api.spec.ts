@@ -23,7 +23,7 @@ test.describe('Admin backbone (API)', () => {
     await session?.ctx.dispose();
   });
 
-  test('@blocker task-definitions library lists tasks with versioning info', async () => {
+  test('@smoke @blocker task-definitions library lists tasks with versioning info', async () => {
     const res = await apiGet(session, '/tasks/api/v1/task-definitions?pageIndex=1&pageSize=10');
     expect(res.status()).toBe(200);
     const body = await res.json();

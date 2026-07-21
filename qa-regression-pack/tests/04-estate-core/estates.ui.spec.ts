@@ -13,13 +13,13 @@ import { dbAvailable, dbQuery } from '../../src/db';
  * Runs under the 'internal' project (pd.json = EstateManager — the role authorized for
  * the backbone). Read-only: opens and reads, never mutates estate state.
  *
- * Plus a @db verification (skips cleanly without CB_* creds) that an estate shown by the
+ * Plus a @db verification against live [Case].CourtCases (skips cleanly without CB_* creds) that an estate shown by the
  * API genuinely exists in cases.court_cases.
  */
 const ESTATE_CANDIDATES = ['INH00016', 'INH00009', 'INH00007', 'INH00005'] as const;
 
 test.describe('Estates list & detail screens (UI)', () => {
-  test('@blocker /court-cases renders the estates table with التصنيف + المصفي columns and rows', async ({ page }) => {
+  test('@smoke @blocker /court-cases renders the estates table with التصنيف + المصفي columns and rows', async ({ page }) => {
     const estates = new EstatesListPage(page);
     await estates.goto();
 
@@ -44,7 +44,7 @@ test.describe('Estates list & detail screens (UI)', () => {
     }
   });
 
-  test('@medium @db an estate shown by the API exists in cases.court_cases', async () => {
+  test('@medium @db an estate shown by the API exists in [Case].CourtCases', async () => {
     test.skip(!dbAvailable(), 'DB creds (CB_*) not configured');
 
     // Pull a real estate the UI/API surfaces, then verify its row in the DB.
@@ -72,22 +72,25 @@ test.describe('Estates list & detail screens (UI)', () => {
     }
     expect(caseId, 'a caseId is required for the DB cross-check').toBeTruthy();
 
-    // DB side (SELECT-only). cases.court_cases is the ground-truth cases table (id PK,
-    // deceased_national_id) per the team suite's classification/letter-verification DB
-    // helpers. The estate the API returned must exist there.
+    // DB side (SELECT-only). [Case].CourtCases is the ground-truth cases table (id PK,
+    // deceased_national_id) in the live Azm_JointFunds SQL Server. The schema name `Case`
+    // is a T-SQL reserved keyword, so it MUST be bracketed. The estate the API returned
+    // must exist there.
     const row = await dbQuery<{ id: string; deceased_national_id: string | null }>(
-      `SELECT id, deceased_national_id FROM cases.court_cases WHERE id = $1`,
+      `SELECT id, deceased_national_id FROM [Case].CourtCases WHERE id = $1`,
       [caseId!],
     );
-    expect(row.rowCount, `court_cases must contain the estate ${caseId} the API returned`).toBe(1);
-    expect(String(row.rows[0].id)).toBe(String(caseId));
+    expect(row.rowCount, `[Case].CourtCases must contain the estate ${caseId} the API returned`).toBe(1);
+    // SQL Server stores/returns GUIDs upper-cased while the API emits them lower-cased —
+    // compare case-insensitively.
+    expect(String(row.rows[0].id).toLowerCase()).toBe(String(caseId).toLowerCase());
     // Values come back as strings from the CloudBeaver relay — compare as strings.
     if (deceasedNid) {
       expect(String(row.rows[0].deceased_national_id)).toBe(String(deceasedNid));
     }
     test.info().annotations.push({
       type: 'db-verify',
-      description: `cases.court_cases row confirmed for estate ${caseId}${deceasedNid ? ` (deceased_national_id matched)` : ''}`,
+      description: `[Case].CourtCases row confirmed for estate ${caseId}${deceasedNid ? ` (deceased_national_id matched)` : ''}`,
     });
   });
 });

@@ -17,7 +17,8 @@ import { dbAvailable, dbQuery } from '../../src/db';
  * empty results table for this heir. Mirrors the proven heir-journey routes.
  *
  * DB layer (@db, SELECT-only, CB_*-gated → clean-skips until creds exist): verifies the
- * heir rows that back an estate actually persist in cases.court_case_heirs.
+ * heir rows that back an estate actually persist in [Case].HeirsListingHeirs (joined to
+ * the case via [Case].HeirsListingRecords), against the live Azm_JointFunds SQL Server.
  */
 
 test.describe('05-heirs — heir portal screens (UI)', () => {
@@ -70,11 +71,12 @@ test.describe('05-heirs — heir portal screens (UI)', () => {
 
 interface HeirRow {
   id: string;
-  status: string | null;
+  full_name: string | null;
+  status_name: string | null;
 }
 
 test.describe('05-heirs — DB verification (@db)', () => {
-  test('@high @db heir rows persist for a seeded estate (cases.court_case_heirs)', async () => {
+  test('@high @db heir rows persist for a seeded estate ([Case].HeirsListingHeirs)', async () => {
     test.skip(!dbAvailable(), 'DB creds (CB_*) not configured');
     let session: ApiSession | undefined;
     try {
@@ -84,17 +86,22 @@ test.describe('05-heirs — DB verification (@db)', () => {
       const caseId = items.find((i) => !!i.caseId)?.caseId;
       test.skip(!caseId, 'no seeded estate available to verify heirs against');
 
-      // SELECT-only. CloudBeaver returns values as strings — compare accordingly.
+      // Live Azm_JointFunds SQL Server: heirs are rows in [Case].HeirsListingHeirs, tied to
+      // a court case through [Case].HeirsListingRecords (record.court_case_id). Bracket the
+      // reserved `Case` schema. SELECT-only; CloudBeaver returns values as strings.
       const { rows, rowCount } = await dbQuery<HeirRow>(
-        `SELECT id, status FROM cases.court_case_heirs WHERE court_case_id = $1`,
+        `SELECT h.id AS id, h.full_name AS full_name, h.status_name AS status_name
+         FROM [Case].HeirsListingHeirs h
+         JOIN [Case].HeirsListingRecords r ON r.id = h.heirs_listing_record_id
+         WHERE r.court_case_id = $1 AND h.is_deleted = 0`,
         [caseId!],
       );
       // The estate's heirs must persist as first-class rows (each with a stable id).
-      expect(rowCount, 'heir-rows query executed against cases.court_case_heirs').toBeGreaterThanOrEqual(0);
+      expect(rowCount, 'heir-rows query executed against [Case].HeirsListingHeirs').toBeGreaterThanOrEqual(0);
       for (const r of rows) {
         expect(r.id, 'each persisted heir row carries an id').toBeTruthy();
       }
-      test.info().annotations.push({ type: 'db', description: `court_case_heirs rows for estate ${caseId}: ${rowCount}` });
+      test.info().annotations.push({ type: 'db', description: `[Case].HeirsListingHeirs rows for estate ${caseId}: ${rowCount}` });
     } finally {
       await session?.ctx.dispose();
     }

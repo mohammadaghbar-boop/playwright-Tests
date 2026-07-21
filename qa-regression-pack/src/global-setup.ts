@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { loginInternal, loginViaNafath, captureDemoPanelToken } from './helpers/login';
 import { NATIONAL_IDS } from './helpers/users';
+import { runPreflight } from './helpers/health';
 
 const AUTH_DIR = path.join(__dirname, '..', '.auth');
 const FRESH_MS = 50 * 60 * 1000; // just under Keycloak session lifetime
@@ -39,6 +40,12 @@ async function saveAuth(outFile: string, login: (page: import('@playwright/test'
 
 export default async function globalSetup(_config: FullConfig): Promise<void> {
   fs.mkdirSync(AUTH_DIR, { recursive: true });
+
+  // Environment preflight FIRST — probe portal/API/Nafath-mock/SMS-mock reachability,
+  // print a DEGRADED banner + write .health.json if anything is down. Never fails the
+  // run: a mid-deploy CIT should be labelled, not misread as product regressions.
+  await runPreflight();
+
   // Sequential on purpose — the Nafath mock rejects overlapping login requests.
   await saveAuth(path.join(AUTH_DIR, 'pd.json'), (p) => loginInternal(p));
   await saveAuth(path.join(AUTH_DIR, 'sp.json'), (p) => loginViaNafath(p, NATIONAL_IDS.serviceProvider));

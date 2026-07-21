@@ -10,6 +10,8 @@ export const URLS = {
   api: process.env.BASE_API_URL ?? 'https://d-infath-jf-api.azm-cit.com',
   sso: process.env.SSO_URL ?? 'https://d-infath-sso.azm-cit.com',
   nafathMock: process.env.MOCK_NAFATH_URL ?? 'https://qa-infath-mocks.azm-dev.com',
+  /** SMS / notifications mock — carries registration OTPs at /api/notifications (CIT). */
+  smsMock: process.env.MOCK_SMS_URL ?? 'https://d-infath-mocks.azm-cit.com',
 };
 
 export const TENANT_ID = process.env.TENANT_ID ?? 'azm-tenant-12345';
