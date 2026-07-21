@@ -21,6 +21,19 @@ checklist and report a concise pass/fix list — do **not** silently rewrite the
 - [ ] Priorities are sane (critical flows = High).
 - [ ] CSV is valid AIO format (header, multi-step rows, `Status=NR`, correct `Story`).
 - [ ] Negative/permission cases use the right non-authorized role/user.
+- [ ] **Coverage taxonomy** considered — negatives, boundary-value, validation, error handling,
+      permissions/roles, security, auth/session, API, DB/data-integrity, audit logs,
+      notifications, background jobs, integrations, state transitions, search/filter/sort/
+      pagination, large datasets, empty states, concurrency, performance, UX behaviour,
+      regression — each covered or explicitly marked N/A.
+- [ ] Every case has a **Risk level** (Critical/High/Medium/Low) and its title begins with "Verify".
+- [ ] **Code cross-check** — cases map to the implementation's validation branches, permission
+      checks, APIs, DB ops, exception handling, feature flags and config paths; uncovered paths
+      are covered or justified out-of-scope.
+
+Before the gate, do a **QA-lead self-review** of your own suite (missing / weak / duplicate
+cases; missing negatives, permissions, integration, regression) and iterate — don't stop at
+the first draft.
 
 **Human gate:** end with either **"Approved for import"** or a numbered list of required
 fixes. If fixes are needed, hand back to `/stlc-test-cases`. Only approved cases proceed to

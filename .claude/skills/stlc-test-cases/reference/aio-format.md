@@ -1,37 +1,58 @@
 # AIO Test — CSV import format
 
-Derived from the working template `JF-172_Test_Cases_AIO.csv`. Match it exactly.
+**Match AIO's native exported schema exactly** — that is what the AIO importer accepts. The
+earlier 11-column template (`Test Id,Summary,…,Creator`, one row per step, LF, no BOM) did
+**not** import — it was hand-made and is now retired. Ground truth is a real AIO export
+(`AIO_CASE_*_Export_*.csv`): **27 columns, UTF-8 with BOM, CRLF line endings, and all steps
+in one multi-line cell** (not one row per step).
 
-## Header (row 1, verbatim)
+## Header (row 1, verbatim — 27 columns)
 ```
-Test Id,Summary,Priority,TestSteps,ExpectedResults,Story,Test Type,Component,Release,Status,Creator
-```
-
-## Columns
-| Column | Meaning | Notes |
-|--------|---------|-------|
-| Test Id | Case id, e.g. `TC-172-01` | `TC-<storyNumber>-<NN>`, zero-padded, sequential |
-| Summary | One-line title | present tense, specific |
-| Priority | `High` / `Medium` / `Low` | |
-| TestSteps | One step | see multi-step rule below |
-| ExpectedResults | Expected outcome of the case | on the first row of the case |
-| Story | e.g. `JF-172` | the story id |
-| Test Type | `Manual` | (use `Manual` unless told otherwise) |
-| Component | usually blank | |
-| Release | usually blank | |
-| Status | `NR` (Not Run) | initial import state |
-| Creator | e.g. `Ahmad Altwaam` | the authoring engineer |
-
-## Multi-step cases
-The first row carries all columns. **Each additional step is its own row with only the
-`TestSteps` column filled** (all other columns empty). Example:
-
-```
-TC-172-01,Process starts after a valid rank is saved,High,Classify an estate and save a rank,The process starts immediately after the rank is saved,JF-172,Manual,,,NR,Ahmad Altwaam
-,,,Observe whether the process starts after the rank is saved,,,,,,,
+S.NO.,Key,Version,Title,Description,Pre-condition,Datasets/Examples,BDDKeyword,Steps,Data,Expected Result,Folder,Requirements,Owner,Priority,Status,Type,Releases,Components,Estimated Effort(in mins),Tags,Automation Status,Automation Owner,Automation Key,Case Created,Version Created,Updated
 ```
 
-## Gotchas
-- No commas inside unquoted fields — rephrase or quote the field.
+## What to fill (new cases, on import)
+| Column | Fill with |
+|--------|-----------|
+| S.NO. | running number (1, 2, 3 …) — informational |
+| Key | **blank** — AIO assigns the `JF-TC-####` key on import |
+| Version | `1` |
+| Title | case title — **must begin with "Verify"** |
+| Description | one-line description |
+| Pre-condition | preconditions / required state |
+| Datasets/Examples | blank |
+| BDDKeyword | blank |
+| Steps | **all steps in ONE quoted cell**, numbered & newline-separated: `"1. …⏎2. …⏎3. …"` |
+| Data | test data / record IDs |
+| Expected Result | **one quoted cell**, numbered to match each step: `"1. …⏎2. …"` |
+| Folder | optional AIO folder (e.g. `$story`); else blank |
+| Requirements | the story key (e.g. `JF-575`) to link the requirement |
+| Owner | authoring engineer |
+| Priority | AIO's priority values (typically `Highest`/`High`/`Medium`/`Low`/`Lowest`). Map **Risk**: Critical→Highest, High→High, Medium→Medium, Low→Low |
+| Status | blank (AIO defaults the case status; run-status lives in the cycle, not here) |
+| Type | `Manual` (or `Automated` once automated) |
+| Releases, Components, Estimated Effort(in mins) | blank / optional |
+| Tags | optional — carry the **risk level** (e.g. `risk:Critical`) and any `@blocked-JFxxx` |
+| Automation Status, Automation Owner, Automation Key | blank |
+| Case Created, Version Created, Updated | blank (AIO sets) |
+
+## Encoding & line endings — the actual cause of the earlier import failure
+- Write **UTF-8 with BOM** and **CRLF** line endings (exactly what AIO exports). A UTF-8
+  file **without** BOM and with **LF-only** endings is the format that failed to import,
+  especially with Arabic text.
+- Any field containing a comma, quote, or newline **must be double-quoted**; escape an
+  embedded quote by doubling it (`""`). The `Steps` and `Expected Result` cells are always
+  quoted (they contain newlines).
 - Keep Arabic text as-is (UTF-8).
-- Row count in the file = (number of cases) + (number of extra step rows).
+- The `Write` tool does not emit a BOM/CRLF by itself — after writing, **post-process** to add
+  the BOM and convert to CRLF (a tiny node/`sed` step) and verify before handing off.
+
+## Multi-step model (changed from the retired format)
+**One row per case.** All steps go in the single quoted `Steps` cell as a numbered list; the
+matching outcomes go in the single quoted `Expected Result` cell with the same numbering. Do
+**not** emit one row per step.
+
+## Validate before handing off
+Confirm: BOM present, CRLF endings, 27 columns on every row, `Steps`/`Expected Result` quoted
+and numbered — and ideally a **trial import into a scratch AIO cycle** to confirm it lands,
+before `/stlc-test-case-review`.

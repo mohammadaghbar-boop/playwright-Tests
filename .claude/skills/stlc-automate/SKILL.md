@@ -34,6 +34,12 @@ API/DB guards. Practical notes for the JF portal:
 - When the interactive action is blocker-gated, verify read-only against real evidence
   records and keep the action itself as a `test.fixme` tagged to the blocker.
 
+### Triage automation candidacy
+Before writing specs, classify each case **Suitable for automation / Manual-only / Low
+automation value** (with a one-line reason), and automate only the *suitable* ones. Stable,
+deterministic, high-value flows automate well; exploratory, one-off, or heavily visual/UX
+checks are often manual-only or low-value. Don't automate for the sake of a number.
+
 ### Verify before handing off
 Run the new spec and confirm it is **green** locally (discovery + actual run). A spec that
 isn't verified green does not proceed. If parts can't pass yet (pending dev / data), mark
