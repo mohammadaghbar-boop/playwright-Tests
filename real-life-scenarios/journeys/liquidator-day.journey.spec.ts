@@ -87,8 +87,10 @@ test.describe('Journey: Liquidator — a working day on an assigned estate', () 
     });
 
     await step('cross-check via DB — the cases row for INH00016 has a liquidator assigned', async () => {
-      // SELECT-only, correct-by-construction against cases.court_cases. Runs only with CB_* creds;
-      // otherwise a clean db-skipped note (the UI + API verification already ran).
+      // SELECT-only against live [Case].CourtCases (the `Case` schema is a T-SQL reserved
+      // word, so it is bracketed). Runs only with CB_* creds; otherwise a clean db-skipped
+      // note (the UI + API verification already ran). SQL Server has no boolean literal, so
+      // liquidator presence is projected via CASE WHEN → '1'/'0' (relay returns strings).
       if (!dbAvailable()) {
         test.info().annotations.push({
           type: 'db-skipped',
@@ -96,15 +98,17 @@ test.describe('Journey: Liquidator — a working day on an assigned estate', () 
         });
         return;
       }
-      const { rows, rowCount } = await dbQuery<{ file_number: string; has_liquidator: boolean }>(
-        'SELECT file_number, (liquidator_id IS NOT NULL) AS has_liquidator FROM cases.court_cases WHERE file_number = $1',
+      const { rows, rowCount } = await dbQuery<{ file_number: string; has_liquidator: string }>(
+        'SELECT file_number, CASE WHEN liquidator_id IS NOT NULL THEN 1 ELSE 0 END AS has_liquidator FROM [Case].CourtCases WHERE file_number = $1',
         [ESTATE],
       );
-      expect(rowCount, `exactly one cases.court_cases row for ${ESTATE}`).toBe(1);
+      expect(rowCount, `exactly one [Case].CourtCases row for ${ESTATE}`).toBe(1);
       expect(rows[0].file_number).toBe(ESTATE);
+      // INH00016 is the seeded estate with a liquidator assigned (evidence in memory).
+      expect(String(rows[0].has_liquidator), `${ESTATE} should have a liquidator assigned in the DB`).toBe('1');
       test.info().annotations.push({
         type: 'db-verified',
-        description: `cases.court_cases: file_number=${rows[0].file_number}, liquidator_id present=${rows[0].has_liquidator}`,
+        description: `[Case].CourtCases: file_number=${rows[0].file_number}, liquidator_id present=${rows[0].has_liquidator === '1'}`,
       });
     });
 

@@ -1,0 +1,56 @@
+# JF Real-Life Scenarios Pack — CI workflow (REFERENCE COPY)
+#
+# To activate: move this file to the repo root at .github/workflows/real-life-scenarios.yml
+# on the branch you want it to run from. GitHub only runs workflows found under
+# .github/workflows/ (on the default branch, and on the PR's head branch for pull_request).
+#
+# Runs the 7 persona journeys on a nightly schedule, on demand, and on PRs that touch the
+# pack, then uploads the narrated Playwright HTML report as an artifact.
+name: QA — Real-Life Scenarios
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # nightly 02:00 UTC
+  workflow_dispatch: {} # manual "Run workflow" button
+  pull_request:
+    paths:
+      - 'real-life-scenarios/**'
+
+defaults:
+  run:
+    working-directory: real-life-scenarios
+
+jobs:
+  journeys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # Optional — defaults live in src/helpers/users.ts; override via repo secrets if needed.
+      BASE_URL: ${{ secrets.JF_BASE_URL }}
+      BASE_API_URL: ${{ secrets.JF_BASE_API_URL }}
+      # DB verification layer — set these repo secrets to make the @db tests RUN (else they skip).
+      CB_BASE_URL: ${{ secrets.CB_BASE_URL }}
+      CB_USERNAME: ${{ secrets.CB_USERNAME }}
+      CB_PASSWORD: ${{ secrets.CB_PASSWORD }}
+      CB_CONNECTION_NAME: ${{ secrets.CB_CONNECTION_NAME }}
+      CB_DATABASE: ${{ secrets.CB_DATABASE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run real-life journeys
+        run: npx playwright test
+        # never let a known-issue failure fail the CI job — the priority reporter's
+        # regression-report.md carries the real GO/NO-GO signal.
+        continue-on-error: true
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-life-report
+          path: |
+            real-life-scenarios/playwright-report/**
+          retention-days: 14

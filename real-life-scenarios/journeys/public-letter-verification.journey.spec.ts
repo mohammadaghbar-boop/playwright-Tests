@@ -11,7 +11,7 @@ import { URLS, TENANT_ID, FIXTURES } from '../src/world';
  * number + the deceased's national ID. This is the only fully-anonymous journey.
  */
 test.describe('Journey: Public — verify a correspondence letter', () => {
-  test('a visitor checks whether a letter is authentic', async () => {
+  test('a visitor checks whether a letter is authentic @smoke', async () => {
     const api = await apiContext();
     const VERIFY = `${URLS.api}/cases/api/v1/letter-verifications`;
     const headers = { TenantIdentifier: TENANT_ID, 'Content-Type': 'application/json', 'Accept-Language': 'ar-SA' };

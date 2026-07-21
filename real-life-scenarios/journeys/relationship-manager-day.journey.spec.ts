@@ -16,7 +16,7 @@ import { URLS } from '../src/world';
  * actually renders rather than red-failing.
  */
 test.describe('Journey: Relationship manager — review the day\'s workload', () => {
-  test('an RM reads the dashboard, works the incoming inquiries, and opens an estate', async ({ page }) => {
+  test('an RM reads the dashboard, works the incoming inquiries, and opens an estate @smoke', async ({ page }) => {
     const rm = PERSONAS.relationshipManager;
     let openedEstate = '';
 
@@ -132,8 +132,9 @@ test.describe('Journey: Relationship manager — review the day\'s workload', ()
     });
 
     await step('5. cross-check via DB — the cases row matches the estate on screen', async () => {
-      // SELECT-only, correct-by-construction against cases.court_cases. Runs only with CB_* creds,
-      // otherwise records a clean db-skipped note (UI + API verification above already ran).
+      // SELECT-only against live [Case].CourtCases (the `Case` schema is a T-SQL reserved
+      // word, so it is bracketed). Runs only with CB_* creds, otherwise records a clean
+      // db-skipped note (UI + API verification above already ran).
       const fileNo = (openedEstate.match(/INH\d+/) ?? [openedEstate])[0];
       if (!dbAvailable()) {
         test.info().annotations.push({
@@ -143,14 +144,14 @@ test.describe('Journey: Relationship manager — review the day\'s workload', ()
         return;
       }
       const { rows, rowCount } = await dbQuery<{ file_number: string; classification: string | null }>(
-        'SELECT file_number, classification FROM cases.court_cases WHERE file_number = $1',
+        'SELECT file_number, classification FROM [Case].CourtCases WHERE file_number = $1',
         [fileNo],
       );
-      expect(rowCount, `exactly one cases.court_cases row for ${fileNo}`).toBe(1);
+      expect(rowCount, `exactly one [Case].CourtCases row for ${fileNo}`).toBe(1);
       expect(rows[0].file_number).toBe(fileNo);
       test.info().annotations.push({
         type: 'db-verified',
-        description: `cases.court_cases: file_number=${rows[0].file_number}, classification=${rows[0].classification ?? '-'}`,
+        description: `[Case].CourtCases: file_number=${rows[0].file_number}, classification=${rows[0].classification ?? '-'}`,
       });
     });
   });

@@ -77,7 +77,7 @@ async function openEstate(page: Page, candidates: string[]): Promise<string> {
 }
 
 test.describe('Journey: Estate Manager — works a new estate file', () => {
-  test('an estate manager opens a seeded estate and reviews the whole file', async ({ page }) => {
+  test('an estate manager opens a seeded estate and reviews the whole file @smoke', async ({ page }) => {
     const em = PERSONAS.estateManager;
     let openedFile = '';
 
@@ -204,9 +204,10 @@ test.describe('Journey: Estate Manager — works a new estate file', () => {
     });
 
     await step('8. cross-check via DB — the cases row matches the on-screen file number', async () => {
-      // DB layer: SELECT-only, correct-by-construction against cases.court_cases. Runs only
-      // when the CloudBeaver-relay CB_* creds exist; otherwise records a clean db-skipped note
-      // (the UI + API parts above already ran, so the journey is not skipped).
+      // DB layer: SELECT-only against live [Case].CourtCases (the `Case` schema is a T-SQL
+      // reserved word, so it is bracketed). Runs only when the CloudBeaver-relay CB_* creds
+      // exist; otherwise records a clean db-skipped note (the UI + API parts above already
+      // ran, so the journey is not skipped).
       if (!dbAvailable()) {
         test.info().annotations.push({
           type: 'db-skipped',
@@ -215,14 +216,14 @@ test.describe('Journey: Estate Manager — works a new estate file', () => {
         return;
       }
       const { rows, rowCount } = await dbQuery<{ file_number: string; classification: string | null }>(
-        'SELECT file_number, classification FROM cases.court_cases WHERE file_number = $1',
+        'SELECT file_number, classification FROM [Case].CourtCases WHERE file_number = $1',
         [openedFile],
       );
-      expect(rowCount, `exactly one cases.court_cases row for ${openedFile}`).toBe(1);
+      expect(rowCount, `exactly one [Case].CourtCases row for ${openedFile}`).toBe(1);
       expect(rows[0].file_number).toBe(openedFile);
       test.info().annotations.push({
         type: 'db-verified',
-        description: `cases.court_cases: file_number=${rows[0].file_number}, classification=${rows[0].classification ?? '-'}`,
+        description: `[Case].CourtCases: file_number=${rows[0].file_number}, classification=${rows[0].classification ?? '-'}`,
       });
     });
   });

@@ -28,7 +28,7 @@ async function waitForContent(page: Page): Promise<void> {
 const REVIEW_STATUS = 'قيد مراجعة إدارة المشتريات';
 
 test.describe('Journey: Purchasing employee — review a service-provider registration', () => {
-  test('a purchaser reviews a facility awaiting purchasing review', async ({ page }) => {
+  test('a purchaser reviews a facility awaiting purchasing review @smoke', async ({ page }) => {
     await step('The purchaser signs in through the demo-users panel', async () => {
       await loginAs(page, PERSONAS.purchasing);
       expect(page.url(), 'should have left the login screen').not.toContain('/login');
