@@ -55,6 +55,7 @@ import { createHmac } from 'node:crypto';
 import * as path from 'node:path';
 
 const BASE_URL = process.env.BASE_URL ?? 'https://d-infath-jf-portal.azm-cit.com';
+const BASE_API_URL = process.env.BASE_API_URL ?? 'https://d-infath-jf-api.azm-cit.com';
 const DEMO_CASE_ID = '3b93081c-d5ca-4df8-abcb-914a526dcdac'; // INH00581, accepted by Majed
 // Reuse the session global-setup.ts already logged in via real Nafath (mock user picker,
 // national ID 1100000011 = Majed ALQAHTANI) — logging in fresh per test here would run N
@@ -159,7 +160,8 @@ test.describe('JF-575 — Inquiry Authorities', () => {
     );
     await submit.click();
     const resp = await createResponse;
-    expect(resp.status()).toBe(201);
+    // API returns 200, not 201, on create — app-wide Result<T> convention, filed as JF-1059.
+    expect(resp.status()).toBe(200);
 
     await page.waitForURL(/\?tab=inquiries/, { timeout: 10_000 });
     await expect(page.getByText(ar)).toBeVisible({ timeout: 10_000 });
@@ -213,8 +215,8 @@ test.describe('JF-575 — Inquiry Authorities', () => {
     request,
   }) => {
     const listResp = await request.get(
-      `${BASE_URL}/cases/api/v1/court-cases/${DEMO_CASE_ID}/inquiry-authorities`,
-      { headers: { Cookie: `access_token=${forgeJwt(['Heir'])}` } },
+      `${BASE_API_URL}/cases/api/v1/court-cases/${DEMO_CASE_ID}/inquiry-authorities`,
+      { headers: { Authorization: `Bearer ${forgeJwt(['Heir'])}` } },
     );
     expect([401, 403]).toContain(listResp.status());
   });
@@ -356,7 +358,8 @@ test.describe('JF-575 — Inquiry Authorities', () => {
       { timeout: 15_000 },
     );
     await submit.click();
-    expect((await createResponse).status()).toBe(201);
+    // API returns 200, not 201, on create — app-wide Result<T> convention, filed as JF-1059.
+    expect((await createResponse).status()).toBe(200);
     await page.waitForURL(/\?tab=inquiries/, { timeout: 10_000 });
     await expect(page.getByText(ar)).toBeVisible({ timeout: 10_000 });
   });
@@ -380,8 +383,13 @@ test.describe('JF-575 — Inquiry Authorities', () => {
       }
     });
 
+    const listResponse = page.waitForResponse(
+      (r) => /\/inquiry-authorities(\?.*)?$/.test(r.url()) && r.request().method() === 'GET',
+      { timeout: 15_000 },
+    );
     await page.getByTestId('create-back').click();
     await page.waitForURL(/\?tab=inquiries/, { timeout: 10_000 });
+    await listResponse;
     expect(postFired).toBe(false);
 
     const rowCountAfter = await page.locator('table tbody tr').count();
