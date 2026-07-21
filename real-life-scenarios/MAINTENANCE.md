@@ -25,9 +25,9 @@ Where a screen is backed by an API and a table, the journey cross-checks all thr
 
 | Journey | FE | BE (API) | DB |
 |---|---|---|---|
-| `estate-manager-e2e` | ✅ | ✅ court-cases list + detail (EstateManager) | ✅ `cases.court_cases` by `file_number` |
-| `liquidator-day` | ✅ | ✅ INH00016 assignment (via EstateManager backbone) | ✅ `cases.court_cases.liquidator_id` |
-| `relationship-manager-day` | ✅ | ✅ court-cases list (RM) | ✅ `cases.court_cases` by `file_number` |
+| `estate-manager-e2e` | ✅ | ✅ court-cases list + detail (EstateManager) | ✅ `[Case].CourtCases` by `file_number` |
+| `liquidator-day` | ✅ | ✅ INH00016 assignment (via EstateManager backbone) | ✅ `[Case].CourtCases.liquidator_id` |
+| `relationship-manager-day` | ✅ | ✅ court-cases list (RM) | ✅ `[Case].CourtCases` by `file_number` |
 | `purchasing-review` | ✅ | ✅ observes the facilities-list backend response | ⏳ deferred — see "Facilities" below |
 | `public-letter-verification` | — | ✅ **is** the BE layer (public verify endpoint) | n/a (no reachable seeded letter fixture) |
 | `heir-journey` | ✅ | documents an empty/blocked state (no linked-estate data to cross-check) | n/a |
@@ -72,7 +72,7 @@ Where a screen is backed by an API and a table, the journey cross-checks all thr
   cross-check follows.
 
 ## DB verification — grounding & sync (`CB_*`)
-- The CIT Postgres is VPC-restricted; `src/db.ts` relays **SELECT** statements through the
+- The CIT SQL Server (Azm_JointFunds) is VPC-restricted; `src/db.ts` relays **SELECT** statements through the
   CloudBeaver web API, exactly like the team's `Automation-Tests/utils/db-client.ts`.
 - To activate the DB layer, set all of these (in `.env`, gitignored — never commit them):
   `CB_BASE_URL`, `CB_USERNAME`, `CB_PASSWORD`, `CB_CONNECTION_NAME`, `CB_DATABASE`.
@@ -80,7 +80,7 @@ Where a screen is backed by an API and a table, the journey cross-checks all thr
   and returns — the journey still runs and still reports its UI + API verdict.
 - Values come back as **strings** (CloudBeaver serialization) — compare against strings.
 - Correct-by-construction schema hints (grounded in the team suite + `system-docs/issues`):
-  `cases.court_cases` has `id`, `file_number` (the `INHxxxxx` number), `deceased_national_id`,
+  `[Case].CourtCases` (SQL Server, schema `Case` is bracketed) has `id`, `file_number` (the `INHxxxxx` number), `classification`, `liquidator_id`, `deceased_national_id`;
   `classification`, `liquidator_id`. New DB checks should reuse these or add columns only after
   confirming them against the team's SELECTs or a `system-docs` issue.
 - **Facilities:** the purchasing journey's facility rows are **not** in the verified `cases` SELECT
