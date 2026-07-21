@@ -11,7 +11,11 @@ allowed-tools: Read, Write, Edit, Grep, Bash
 
 Start from `qa-artifacts/$story/05-results-summary.md`. For every case — especially the
 "Requires further investigation" ones — do the investigation needed to reach a confident
-final classification (re-run, inspect DB/API, compare against acceptance criteria).
+final classification (re-run, inspect DB/API, compare against acceptance criteria). Use the
+**source code as a helper** to root-cause the mechanism (real status transitions, evaluation
+order, error branches) — read-only. Judge every case against the **acceptance criteria as the
+authority**: if the code does X but the story requires Y, that's **Failed**, not Passed.
+Never modify source to make a case pass.
 
 ### Classification taxonomy (see `${CLAUDE_SKILL_DIR}/reference/classification.md`)
 - **Passed** — behaves per the acceptance criteria; verified with evidence.

@@ -1,0 +1,33 @@
+Test Id,Summary,Priority,TestSteps,ExpectedResults,Story,Test Type,Component,Release,Status,Creator
+TC-172-01,Assignment process starts automatically after a valid rank is saved,High,Take a classified estate with a saved rank (A or D) and no active assignment request,"An assignment request is created for the estate and the estate moves out of the pre-assignment state",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Trigger/observe the assignment process and query cases.liquidator_assignment_requests for the estate,,,,,,,
+TC-172-02,Only services with the Liquidator role are considered as candidates,High,Inspect the candidate pool used for selection on a classified estate,"Only accepted Liquidator services are considered; non-liquidator services are excluded",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Compare the eligible-candidate set against facility services by type,,,,,,,
+TC-172-03,Inactive liquidator accounts are excluded from selection,High,Ensure a liquidator service whose account is inactive exists,"The inactive liquidator is never selected; only active-account liquidators are eligible",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Run assignment and confirm the inactive liquidator is not chosen,,,,,,,
+TC-172-04,Same-rank liquidator is selected first,High,Use a rank-A estate with an available rank-A liquidator service (Majed NID 1100000011),"The rank-A liquidator is selected for the rank-A inheritance (same-rank match)",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Run assignment and confirm the selected liquidator_user_id matches the rank-A service,,,,,,,
+TC-172-05,Higher-rank escalation when no same-rank liquidator exists,Medium,"Use a rank-D estate when no rank-D/C/B liquidator exists but a rank-A liquidator does",The system escalates D->C->B->A and selects the rank-A liquidator (never a lower rank),JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Run assignment and confirm the higher-rank liquidator is selected,,,,,,,
+TC-172-06,Never assign a lower-ranked liquidator to a higher-ranked inheritance,High,"Arrange an estate whose rank is higher than an available liquidator's rank only","The lower-ranked liquidator is not selected; if none eligible, the process stops (no wrong assignment)",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Run assignment and confirm no lower-rank assignment occurred,,,,,,,
+TC-172-07,Workload priority selects the liquidator with the lowest count,High,"Provision two eligible liquidators of the same rank with different workloads (accepted + pending)","The liquidator with the lowest (accepted + pending) count is selected",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Run assignment and confirm the lowest-workload liquidator was chosen,,,,,,,
+TC-172-08,Tie-break selects the next liquidator in the queue,Medium,"Provision two eligible same-rank liquidators with equal lowest workload","On a tie the system selects the next one in the queue (deterministic order)",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Run assignment and confirm the queue-order tie-break,,,,,,,
+TC-172-09,Inheritance status becomes «قيد تعيين المصفي» after the request is sent,High,Run assignment on a classified estate,"The stored inheritance status is set to «قيد تعيين المصفي» after a successful send",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Query the estate status in the DB after assignment,,,,,,,
+TC-172-10,One inheritance-log entry «إرسال طلب تعيين للمصفي» is created,High,Run assignment on a classified estate,"Exactly one log entry is created with event «إرسال طلب تعيين للمصفي», Done By = النظام, and View-More showing selected liquidator facility, rank, and action status",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Query the inheritance log / case_events for the estate,,,,,,,
+TC-172-11,Assignment request appears in the liquidator's list with قبول/تعذر,High,Log in as the selected liquidator (Nafath NID 1100000011),"The estate appears in the liquidator's inheritance list with قبول (accept) and تعذر (reject) actions",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Open the liquidator court-cases list and locate the assigned estate,,,,,,,
+TC-172-12,No assignment starts when the rank is not saved,High,Use an estate whose classification did not produce a valid rank (no rank saved),"The assignment process does not start; no assignment request is created",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Confirm no row in liquidator_assignment_requests for that estate,,,,,,,
+TC-172-13,Duplicate / overlapping assignment requests are prevented,High,Take an estate that already has one active (pending) assignment request,"A second active request is not created while one is still pending",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Attempt to trigger assignment again and confirm only one active request exists,,,,,,,
+TC-172-14,48-hour no-response triggers reassignment and excludes the non-responder,Medium,"Take an estate with a pending request; age the request past 48h (DB timestamp)","Reassignment starts automatically and the non-responding liquidator is excluded from re-selection for the same estate",JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Run the timeout/reassignment job and confirm exclusion + new request,,,,,,,
+TC-172-15,A rejected/excluded liquidator is not selected again for the same inheritance,Medium,"Mark a liquidator as excluded (rejected/timed-out) for an estate",The same liquidator is never re-selected for that estate on reassignment,JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Trigger reassignment and confirm the excluded liquidator is skipped,,,,,,,
+TC-172-16,No eligible liquidator at all stops the process cleanly,Low,"Arrange an estate for which no eligible (active + rank-adequate) liquidator exists",The automatic assignment stops without error and no request is created (manager-notify handling is out of scope),JF-172,Manual,,,NR,Ahmad Altwaam
+,,,Run assignment and confirm no request + no crash,,,,,,,

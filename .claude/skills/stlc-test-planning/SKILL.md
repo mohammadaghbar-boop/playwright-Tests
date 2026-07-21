@@ -21,7 +21,15 @@ Cover:
 5. **Environment & data needs** — which portal role/user, which records, whether DB relay
    (CloudBeaver) or endpoint/mock access is required. Flag anything you'll need provisioned
    in `/stlc-env-setup`.
-6. **Approach** — API-first vs UI, and why (API-first is cheaper/faster where possible).
+6. **Approach** — API-first vs UI, and why (API-first is cheaper/faster where possible);
+   cover the **FE/UI layer** for user-facing stories, not only API.
+7. **Source & related work** — skim the feature's **source code** (read-only, to sharpen
+   accuracy) and the story's **related/linked Jira stories** (epics, siblings, downstream
+   consumers) to understand context and surface scope gaps. The **user story is always the
+   authority**; code and neighbours inform, they don't override — and source is never modified.
+8. **Resources on hand** — note what you can reuse to test / create data: existing
+   **automation packs / POMs / fixtures**, mock servers, the DB relay, and prior **memory**.
+   For high-complexity stories, consult the patterns library (`/stlc-pattern-harvest`).
 
 Keep it to one page. End with a **"Ready to proceed? yes/blocked"** verdict and, if
 blocked, exactly what's missing. Do not start gap analysis here — that's `/stlc-gap-analysis`.

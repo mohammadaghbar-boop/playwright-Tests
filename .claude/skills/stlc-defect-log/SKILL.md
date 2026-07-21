@@ -22,7 +22,10 @@ Show the drafts to the user. **Human gate:** only after approval, use the Jira M
 - `createJiraIssue` (Bug) in the correct project,
 - `createIssueLink` to link each defect to **$story** (e.g. "relates to" / "blocks"),
 - record the created defect key back into `qa-artifacts/$story/06-classification.md`
-  next to its case (so `/stlc-aio-update` and `/stlc-closure` can reference it).
+  next to its case (so `/stlc-aio-update` and `/stlc-closure` can reference it),
+- **comment on $story** enumerating the bugs raised from it — each defect key, a one-line
+  summary, and its link — so the story itself records what testing produced. (Same Jira-write
+  gate; post only after approval.)
 
 Never open duplicates — check whether a matching defect already exists first.
 

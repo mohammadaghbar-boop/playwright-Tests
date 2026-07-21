@@ -9,8 +9,15 @@ allowed-tools: Read, Write, Edit, Grep, Bash
 
 ## Execute test cases for $story
 
-Run the approved cases from `qa-artifacts/$story/02-test-cases-AIO.csv`. Prefer API-first
-execution where it's cheaper/more reliable; use the UI where the case requires it.
+Run the approved cases from `qa-artifacts/$story/02-$story-TestCases-AIO.csv`. Prefer API-first
+execution for depth/speed, but **for any user-facing story you must also confirm the
+user-visible outcome in the browser** — API/DB-green does not prove the screen is correct.
+Drive the real portal (msedge channel) for at least the observable result of each
+user-facing flow.
+
+**JF-portal UI gotcha:** set Playwright `trace: 'off'` for portal UI runs — the portal
+holds a persistent SignalR socket open, which stalls trace-finalization on teardown (tests
+pass their body, then hang to the timeout). The run log is the text evidence.
 
 ### Rules
 - **5-minute cap per scenario.** If a scenario can't complete within 5 minutes (hang,

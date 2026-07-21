@@ -1,0 +1,23 @@
+{
+  "story": "JF-363",
+  "phase": "run",
+  "method": "Verified accept/reject ACs against real completed assignments (INH00016 accepted, INH00018 rejected). Endpoints POST /assignment/accept {} and /assignment/reject {reason}. DB relay [Case] tables.",
+  "results": [
+    { "id": "TC-363-01", "outcome": "Passed", "evidence": "INH00016: event 24 «قبول المصفي لطلب الإسناد», req_status=2, case status → 11 «قيد العمل» — accept transitions status and grants access" },
+    { "id": "TC-363-03", "outcome": "Passed", "evidence": "acceptance log entry event 24 «قبول المصفي لطلب الإسناد» created (Done By = liquidator), meta present" },
+    { "id": "TC-363-05", "outcome": "Passed", "evidence": "INH00018: after reject, case status stays 10 «قيد تعيين مصفي» (unchanged) — matches AC" },
+    { "id": "TC-363-06", "outcome": "Passed", "evidence": "INH00018: event 25 «تعذر المصفي عن قبول طلب الإسناد» with rejection_reason recorded on the request; req_status=3" },
+    { "id": "TC-363-08", "outcome": "Passed (indirect)", "evidence": "post-reject the rejecting liquidator (Majed) is excluded; reassignment selects nobody else (he is the only liquidator) — exclusion confirmed" },
+    { "id": "TC-363-09", "outcome": "Passed (indirect)", "evidence": "reassignment restarted after reject; with no other eligible liquidator it stops cleanly (1 request retained, no wrong re-send)" },
+    { "id": "TC-363-02", "outcome": "Passed (inferred)", "evidence": "post-accept status is «قيد العمل» (terminal for the request) so accept/reject actions no longer apply; UI button-removal is presentation-side" },
+    { "id": "TC-363-04", "outcome": "Passed (inferred)", "evidence": "accept from list uses the same /assignment/accept endpoint as details — same behaviour" },
+    { "id": "TC-363-07", "outcome": "Passed (inferred)", "evidence": "rejected estate no longer surfaces to the rejecting liquidator (request resolved=rejected)" },
+    { "id": "TC-363-10", "outcome": "Passed (inferred)", "evidence": "reject from list uses the same /assignment/reject endpoint" },
+    { "id": "TC-363-11", "outcome": "Requires further data", "reason": "pre-acceptance sensitive-data-hiding needs a PENDING assignment to view; none exists (both resolved). Needs a fresh assignment." },
+    { "id": "TC-363-12", "outcome": "Requires further data", "reason": "read-only-before-acceptance needs a pending assignment + UI/API view" },
+    { "id": "TC-363-13", "outcome": "Requires further data", "reason": "48h expiry needs a pending request aged past 48h (timestamp) — no pending request available" },
+    { "id": "TC-363-14", "outcome": "Not run (UI)", "reason": "confirmation-modal text is UI-only; API-first run can't assert it" },
+    { "id": "TC-363-15", "outcome": "Requires further data", "reason": "transactional/no-partial-update needs fault injection" }
+  ],
+  "totals": { "passed": 6, "passed_inferred": 4, "requires_further_data": 4, "not_run_ui": 1, "defects": 0 }
+}
