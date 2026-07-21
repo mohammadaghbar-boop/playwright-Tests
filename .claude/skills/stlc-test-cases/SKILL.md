@@ -46,12 +46,12 @@ Map every case to the acceptance criterion or gap it covers. Note any AC with **
 (a coverage gap) and add cases until every AC is covered.
 
 ### Export to AIO CSV
-Write `qa-artifacts/$story/02-$story-TestCases-AIO.csv` (story ID in the filename) in AIO's
-**native import format — see `${CLAUDE_SKILL_DIR}/reference/aio-format.md` and match it
-exactly.** Key points: the **27-column** AIO schema (`S.NO.,Key,Version,Title,Description,
-Pre-condition,…,Steps,Data,Expected Result,…,Priority,Status,Type,…`); **one row per case**
-with all steps in a single numbered `Steps` cell and matching numbered `Expected Result`
-cell (**not** one row per step); leave `Key` blank (AIO assigns it); write the file as
-**UTF-8 with BOM and CRLF** line endings (a no-BOM/LF file is exactly what previously failed
-to import). Validate the encoding and, ideally, a trial import; then hand off to
+Write `qa-artifacts/$story/02-$story-TestCases-AIO.csv` (story ID in the filename) in the
+**working AIO format — see `${CLAUDE_SKILL_DIR}/reference/aio-format.md` and match the
+`JF-759_Test_Cases_AIO.csv` template exactly.** Key points: **11 columns**
+(`Test Id,Summary,Priority,TestSteps,ExpectedResults,Story,Test Type,Component,Release,Status,Creator`);
+**plain UTF-8, NO BOM, LF** endings; **no quoting anywhere → no commas in any field** (rephrase
+or use `;`); **one row per step** — step 1 + the expected result on the case row, extra steps
+as `,,,<step>, ,,,,,,,`; `Status = NR`; `Story = $story`. (A BOM/CRLF/27-column file or any
+quoted field will fail to import.) Confirm the shape against JF-759 and hand off to
 `/stlc-test-case-review`.
