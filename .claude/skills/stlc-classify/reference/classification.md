@@ -22,4 +22,4 @@ of classification, every such case must land on one of the five labels above, wi
 investigation recorded.
 
 ## Evidence
-Every Failed/Gap classification must cite text/trace evidence (never screenshots).
+Every Failed/Gap classification must cite text/trace/screenshot evidence.

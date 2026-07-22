@@ -19,7 +19,7 @@ passing cases and the exact steps that produced them) — not the exploratory at
   sibling specs — rather than re-implementing; use `baseURL`/relative paths once available.
   Prefer role/testid locators and **web-first assertions**; avoid
   `waitForTimeout`/`networkidle`. (See the audit's restructure conventions.)
-- Evidence/artifacts: rely on Playwright trace/video; **never screenshots**.
+- Evidence/artifacts: Playwright trace/video **and screenshots** (screenshots kept local-only, gitignored, never committed).
 
 ### Cover the FE / UI layer (not just API)
 For user-facing stories, author a browser spec (POM) for the observable outcome, not only

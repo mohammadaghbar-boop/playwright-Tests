@@ -19,14 +19,23 @@ user-facing flow.
 holds a persistent SignalR socket open, which stalls trace-finalization on teardown (tests
 pass their body, then hang to the timeout). The run log is the text evidence.
 
+### UI / visual verification — required for user-facing stories (headless DOM is not enough)
+1. If the story is user-facing / UI-heavy, a visual pass is **mandatory** (see `../stlc-test-cases/reference/ui-verification.md`).
+2. Execute the story's **UI Test Guide** (`qa-artifacts/$story/ui-test-guide.md`) step by step, as each relevant role.
+3. At each screen/state, `page.screenshot()` and **read the image** to verify it against the **13-area UI checklist** + the guide's expected items; cross-check on-screen data vs DB/API.
+4. File screenshots **locally** (gitignored): correct screens → `evidence/ui/passed/`; anything with an issue / possible break → `evidence/ui/issues/` (with a one-line note). Never commit screenshots.
+5. **Hard visual-review gate:** the human reviews the captured screens (especially `issues/`) before closure — do not sign off a user-facing story without it.
+
 ### Rules
 - **5-minute cap per scenario.** If a scenario can't complete within 5 minutes (hang,
   missing data, environment block), stop it and record its result as
   **"Requires further investigation"** with the reason — then move on. One stuck case
   must never block the rest.
-- **Evidence = text only.** Capture request/response bodies, status codes, DB query
-  results, console/log output, and Playwright **traces**. **Never take screenshots**
-  (team policy). Save evidence under `qa-artifacts/$story/evidence/`.
+- **Evidence = text + traces + screenshots.** Capture request/response bodies, status codes,
+  DB results, console/log output, Playwright **traces**, and — for user-facing stories —
+  **screenshots** of each key screen/state. Save under `qa-artifacts/$story/evidence/`; UI
+  screenshots go **local-only** (gitignored) into `evidence/ui/passed/` vs `evidence/ui/issues/`
+  (isolate anything with a possible issue). **Never commit screenshots.**
 - **Determinism.** Note the exact records/IDs and environment used for each case.
 
 ### Test-data cleanup (teardown)

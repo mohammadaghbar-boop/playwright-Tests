@@ -20,3 +20,6 @@ TestByAghbar/.auth/
 Automation-Tests/debug-*
 Automation-Tests/diag-*
 Automation-Tests/diagnose-*
+
+# QA UI verification screenshots — local only, never committed
+qa-artifacts/**/evidence/

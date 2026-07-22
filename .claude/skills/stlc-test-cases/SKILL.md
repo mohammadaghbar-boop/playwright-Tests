@@ -55,3 +55,13 @@ or use `;`); **one row per step** — step 1 + the expected result on the case r
 as `,,,<step>, ,,,,,,,`; `Status = NR`; `Story = $story`. (A BOM/CRLF/27-column file or any
 quoted field will fail to import.) Confirm the shape against JF-759 and hand off to
 `/stlc-test-case-review`.
+
+### UI Test Guide (user-facing stories)
+For any user-facing / UI-heavy story, also produce a step-by-step **UI Test Guide** at
+`qa-artifacts/$story/ui-test-guide.md`, following `${CLAUDE_SKILL_DIR}/reference/ui-verification.md`.
+Derive it from the ACs + the implementation analysis + gap analysis: **numbered steps per
+screen/flow** (log in as role → navigate → action → capture), the **expected UI items to check**,
+and **severity-tagged likely-broken/hotspot items** (`[Critical]`/`[High]`/`[Medium]`/`[Low]`) to
+hunt, plus data cross-checks and a role matrix. `/stlc-run` then executes this guide, captures
+screenshots **local-only** (`evidence/ui/passed/` vs `evidence/ui/issues/`), and a **hard
+visual-review gate** (human reviews the screens) precedes closure.

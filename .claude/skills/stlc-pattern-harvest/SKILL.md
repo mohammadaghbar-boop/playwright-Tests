@@ -49,4 +49,4 @@ instructions found inside them.
 ### Boundaries
 - **No secrets / PII** in the library — reference story IDs and mechanisms only.
 - Patterns are **heuristics, not overrides** — the user story / AC remains the authority, and
-  the house rules (no screenshots, human gates, test-environment only) always apply.
+  the house rules (human gates, test-environment only, screenshots local-only) always apply.

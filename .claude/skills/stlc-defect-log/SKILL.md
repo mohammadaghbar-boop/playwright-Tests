@@ -16,7 +16,7 @@ doesn't already have a defect, prepare a Jira bug.
 ### Draft first, then create on approval
 For each defect draft: a clear **summary**, **steps to reproduce** (from the test case),
 **expected vs actual**, **environment/record IDs**, and **evidence** (paths to text/trace
-evidence — never screenshots). Group cases that share one root cause into a single defect.
+evidence, plus **screenshots for UI defects** — stored locally). Group cases that share one root cause into a single defect.
 For each, also articulate **why it's a risk**, the **user/business impact**, and **how it
 should be tested** — a defect report is a risk statement, not just a repro.
 
