@@ -33,6 +33,14 @@ Identify the **real gaps** — be concrete and evidence-based:
 - Distinguish **product gaps** (feature unclear/incomplete) from **coverage gaps**
   (things we must be sure to test).
 
+### 2a. Produce an implementation analysis (from the code)
+From the pulled BE + FE source, write a short analysis alongside the gaps: **feature summary**,
+**technical summary** (APIs, DB changes, background jobs, integrations, feature flags),
+**undocumented / hidden business rules** inferred from the code, **discrepancies between the
+story and the implementation**, **regression impact** (features/modules that could be
+affected), and **bug-prone areas**. Approach it adversarially — the aim is to surface defects
+and risks, not to confirm the ACs.
+
 ### 3. Draft the gap comment (do NOT post yet)
 Write a clear, professional Jira comment summarizing the real gaps to
 `qa-artifacts/$story/01-gap-comment.md`. Then show it to the user and ask them to review.

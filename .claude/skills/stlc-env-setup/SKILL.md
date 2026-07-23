@@ -31,6 +31,20 @@ Record what's available vs blocked in `qa-artifacts/$story/03-env-check.md`. If 
 needed can't be provisioned with the access we have, flag it — those cases will later be
 classified **Requires dev support**. Never target production.
 
+### Pull the latest BE + FE source — mandatory, never skipped
+The judgment phases read the implementation, so make it available **fresh on every run**:
+- Repos (private): `Azm-Tech/azm-joint-fund-backend` and `Azm-Tech/azm-joint-fund-portal`.
+- Locations + URLs come from config/env (`JF_BACKEND_PATH` / `JF_PORTAL_PATH`, default sibling
+  folders). **Never store credentials** — rely on the machine's own git auth (`gh` / Git
+  Credential Manager / SSH). Confirm the authed identity has access to the Azm-Tech org.
+- On each run: if the checkout exists, `git -C <path> fetch && git pull --ff-only` (shallow is
+  fine); otherwise `git clone --depth 1`. Record the pulled commit SHAs in `03-env-check.md`.
+- **CRITICAL — never skip a step for missing GitHub access.** If the clone/pull fails because
+  access isn't granted on the first try, **STOP and ask the user to grant access** (`gh auth
+  login` as their Azm identity, or a read-only PAT for the two repos), then retry. Do **not**
+  skip the source-analysis step or any downstream step, and never proceed as if the code were
+  read.
+
 ### Create the test data yourself — don't wait for the tester
 **Proactively manufacture any data the cases need** rather than skipping positive cases or
 handing the job back to a human. Use **every available resource**: the feature's **source

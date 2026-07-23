@@ -19,7 +19,7 @@ passing cases and the exact steps that produced them) — not the exploratory at
   sibling specs — rather than re-implementing; use `baseURL`/relative paths once available.
   Prefer role/testid locators and **web-first assertions**; avoid
   `waitForTimeout`/`networkidle`. (See the audit's restructure conventions.)
-- Evidence/artifacts: rely on Playwright trace/video; **never screenshots**.
+- Evidence/artifacts: Playwright trace/video **and screenshots** (screenshots kept local-only, gitignored, never committed).
 
 ### Cover the FE / UI layer (not just API)
 For user-facing stories, author a browser spec (POM) for the observable outcome, not only
@@ -33,6 +33,12 @@ API/DB guards. Practical notes for the JF portal:
   failure from a teardown hang.
 - When the interactive action is blocker-gated, verify read-only against real evidence
   records and keep the action itself as a `test.fixme` tagged to the blocker.
+
+### Triage automation candidacy
+Before writing specs, classify each case **Suitable for automation / Manual-only / Low
+automation value** (with a one-line reason), and automate only the *suitable* ones. Stable,
+deterministic, high-value flows automate well; exploratory, one-off, or heavily visual/UX
+checks are often manual-only or low-value. Don't automate for the sake of a number.
 
 ### Verify before handing off
 Run the new spec and confirm it is **green** locally (discovery + actual run). A spec that

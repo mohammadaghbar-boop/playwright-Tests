@@ -16,10 +16,11 @@ and **stop at every human gate** for explicit approval before continuing.
 ### Pipeline
 1. `/stlc-test-planning $story` — plan + entry-criteria check. **Stop if entry criteria fail.**
 2. `/stlc-gap-analysis $story` — analyze; draft gap comment. **✋ GATE: user approves the comment before it is posted to Jira.**
-3. `/stlc-test-cases $story` — author Happy/Unhappy/Edge cases → AIO CSV.
+3. `/stlc-test-cases $story` — author Happy/Unhappy/Edge cases → AIO CSV; for user-facing stories also produce the step-by-step **UI Test Guide** (`ui-test-guide.md`).
 4. `/stlc-test-case-review $story` — checklist review. **✋ GATE: user approves cases (or loop back to step 3).**
 5. `/stlc-env-setup $story` — provision + verify access/data.
-6. `/stlc-run $story` — execute (5-min cap/scenario, text/trace evidence, cleanup).
+6. `/stlc-run $story` — execute (5-min cap/scenario; text/trace evidence + **UI screenshots for user-facing stories**; cleanup).
+   **✋ VISUAL-REVIEW GATE (UI-heavy stories):** the human must review the captured screens (especially `evidence/ui/issues/`) before closure — headless DOM assertions are not sufficient.
 7. `/stlc-results-summary $story` — summarize.
 8. `/stlc-classify $story` — investigate + final classifications.
 9. `/stlc-defect-log $story` — Failed/Gap → **✋ GATE: user approves defects before Jira creation.**
@@ -38,10 +39,10 @@ name and silently drifts if an earlier phase inserts an extra numbered file.
 |---|---|---|
 | 0  | test-planning     | `00-test-plan.md` |
 | 1  | gap-analysis      | `01-gap-comment.md` |
-| 2  | test-cases        | `02-$story-TestCases-AIO.csv` |
+| 2  | test-cases        | `02-$story-TestCases-AIO.csv` (+ `ui-test-guide.md` for user-facing stories) |
 | 3  | test-case-review  | *(gate verdict shown inline — optional notes in `03-test-case-review.md`, which must NOT push later numbers)* |
 | 4  | env-setup         | `03-env-check.md` |
-| 5  | run               | `04-run-results.json` (+ `evidence/`) |
+| 5  | run               | `04-run-results.json` (+ `evidence/`; UI screens local-only/gitignored in `evidence/ui/passed/` & `evidence/ui/issues/`) |
 | 6  | results-summary   | `05-results-summary.md` |
 | 7  | classify          | `06-classification.md` |
 | 8  | defect-log        | updates `06-classification.md` with defect keys |
@@ -55,7 +56,13 @@ name and silently drifts if an earlier phase inserts an extra numbered file.
   (Automating these gates away is the future goal; today they stay manual.)
 - **Parallel-session safe** — everything repo-mutating happens on an isolated per-story
   branch/worktree (step 13), so other concurrent sessions are never disturbed.
-- **No screenshots**, ever — evidence is text/logs/traces.
+- **UI / visual verification is mandatory for user-facing stories — and screenshots ARE evidence.**
+  Headless DOM assertions do not prove the rendered UI. For any user-facing story: `test-cases`
+  produces a step-by-step **UI Test Guide** (`ui-test-guide.md`); `run` captures **screenshots** of
+  each key screen/state and checks them against the UI checklist + the guide; and a **hard
+  visual-review gate** requires the human to review the captured screens before closure.
+  Screenshots are stored **locally only** (gitignored `evidence/ui/`), split into `passed/` vs
+  `issues/`, and are **never committed**. See `stlc-test-cases/reference/ui-verification.md`.
 - **Resumable** — if invoked when some artifacts already exist in `qa-artifacts/$story/`,
   detect the last completed phase and continue from there rather than redoing work.
 - Between phases, give a one-line status ("Phase N done → next") so the user can follow.
@@ -82,6 +89,13 @@ name and silently drifts if an earlier phase inserts an extra numbered file.
   (read-only) to sharpen accuracy — real endpoints, status codes, evaluation order, error
   branches — but the **user story / AC is always the authority** and **source is never
   modified**. If the code contradicts the story, that's a candidate defect, not the spec.
+- **Pull the latest BE + FE source every run; never skip a step for missing access.** The
+  implementation lives in the private repos `Azm-Tech/azm-joint-fund-backend` and
+  `Azm-Tech/azm-joint-fund-portal`. At env-setup, pull the latest from both using the
+  machine's own git auth (never a hard-coded credential). **If access is not granted on the
+  first try, STOP and ask the user to grant GitHub access** (`gh auth login` as their Azm
+  identity, or a read-only PAT) and retry — do **not** skip the source-analysis step, or any
+  downstream step, for lack of source. Missing access is an ask, never a silent skip.
 - **Create test data proactively — never wait for the tester.** Manufacture what the cases
   need through the real product flow, using every resource: source code, memory, the repo's
   **automation packs / POMs / fixtures**, mock servers, and the DB relay. Record IDs as
@@ -95,6 +109,31 @@ name and silently drifts if an earlier phase inserts an extra numbered file.
 - **Learn from experience (continuous).** For a high-complexity story, consult the patterns
   library maintained by `/stlc-pattern-harvest`; at closure, harvest any new reusable pattern
   from the run back into it.
+- **Adversarial, production-readiness mindset.** Optimise for *defect detection and risk
+  coverage*, not for confirming ACs or maximising case count — continuously ask "what could
+  break?" and challenge the implementation; prefer finding a bug over confirming expected
+  behaviour.
+- **Analyse the implementation before writing cases.** From the source, produce a short
+  implementation analysis (feature + technical summary, **undocumented / hidden business
+  rules**, story-vs-code discrepancies, regression impact, bug-prone areas) and feed it into
+  gap-analysis and case design.
+- **Design against the coverage taxonomy — mark N/A, don't skip silently.** Cover (as
+  applicable): functional, negative, boundary-value, validation, error handling, permissions /
+  role-based access, security, auth & session, API, DB & data integrity, audit logs,
+  notifications, background jobs, integrations, state transitions, navigation, search / filter
+  / sort / pagination, large datasets, empty states, concurrency, performance, UX behaviour,
+  and regression.
+- **Risk-rate every case** (Critical / High / Medium / Low) and prioritise so Critical/High
+  scenarios give maximum production-readiness confidence.
+- **Self-review, then cross-check against the code, before each gate.** Review your own suite
+  as a QA lead (missing / weak / duplicate cases; missing negatives, permissions, integration,
+  regression) and iterate — never ship the first draft. Then map cases to implementation
+  branches (validation, conditionals, permission checks, APIs, DB ops, exception handling,
+  feature flags, config paths) and cover each or justify out-of-scope.
+- **Triage automation candidacy** — classify each case *Suitable for automation / Manual-only
+  / Low value* (with a reason); automate only the suitable ones.
+- **Articulate every defect** with *why it's a risk*, *user/business impact*, and *how to
+  test it*.
 
 ### Lessons carried from the JF-844 test-drive (2026-07)
 - **Verify findings at the layer the user experiences before filing.** Two API-level

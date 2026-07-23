@@ -26,9 +26,20 @@ cases** (browser), not only API/DB — every user-visible outcome (list/detail r
 status labels, entity names, enabled/disabled controls) gets at least one UI case.
 API-green ≠ the user's screen is correct.
 
-Each case: a clear **Summary**, a **Priority** (High/Medium/Low), numbered **step-by-step
-TestSteps**, and a precise **ExpectedResult**. Steps must be concrete enough that someone
-else could execute them without asking you.
+**Design against the full coverage taxonomy** (production-readiness mindset — hunt for
+defects, don't just confirm ACs). Cover every applicable dimension, and **mark any as N/A
+with a reason** rather than skipping silently: functional, negative, boundary-value, input
+validation, error handling, permissions / role-based access, security, auth & session, API
+behaviour, DB & data integrity, audit logs, notifications, background jobs, third-party
+integrations, state transitions, navigation, search / filter / sort / pagination, large
+datasets, empty states, concurrency, performance, UX behaviour (not just element
+visibility), and regression. Derive scenarios from the **implementation analysis** produced
+in `/stlc-gap-analysis` — especially undocumented business rules and bug-prone areas.
+
+Each case: a **Title beginning with "Verify"**, a clear description, a **Risk level**
+(Critical/High/Medium/Low) that also drives Priority, **Preconditions**, **Test Data**, and
+numbered **step-by-step** actions each with its **own expected result**. Steps must be
+concrete enough that someone else could execute them without asking you.
 
 ### Traceability
 Map every case to the acceptance criterion or gap it covers. Note any AC with **no** case
@@ -36,9 +47,21 @@ Map every case to the acceptance criterion or gap it covers. Note any AC with **
 
 ### Export to AIO CSV
 Write `qa-artifacts/$story/02-$story-TestCases-AIO.csv` (story ID in the filename) in the
-exact AIO import format — see
-`${CLAUDE_SKILL_DIR}/reference/aio-format.md`. Key points: columns
-`Test Id,Summary,Priority,TestSteps,ExpectedResults,Story,Test Type,Component,Release,Status,Creator`;
-multi-step cases put each extra step on its own row with **only the TestSteps column**
-filled; `Status = NR` (Not Run); `Story = $story`. Confirm the row count matches the
-number of cases and hand off to `/stlc-test-case-review`.
+**working AIO format — see `${CLAUDE_SKILL_DIR}/reference/aio-format.md` and match the
+`JF-759_Test_Cases_AIO.csv` template exactly.** Key points: **11 columns**
+(`Test Id,Summary,Priority,TestSteps,ExpectedResults,Story,Test Type,Component,Release,Status,Creator`);
+**plain UTF-8, NO BOM, LF** endings; **no quoting anywhere → no commas in any field** (rephrase
+or use `;`); **one row per step** — step 1 + the expected result on the case row, extra steps
+as `,,,<step>, ,,,,,,,`; `Status = NR`; `Story = $story`. (A BOM/CRLF/27-column file or any
+quoted field will fail to import.) Confirm the shape against JF-759 and hand off to
+`/stlc-test-case-review`.
+
+### UI Test Guide (user-facing stories)
+For any user-facing / UI-heavy story, also produce a step-by-step **UI Test Guide** at
+`qa-artifacts/$story/ui-test-guide.md`, following `${CLAUDE_SKILL_DIR}/reference/ui-verification.md`.
+Derive it from the ACs + the implementation analysis + gap analysis: **numbered steps per
+screen/flow** (log in as role → navigate → action → capture), the **expected UI items to check**,
+and **severity-tagged likely-broken/hotspot items** (`[Critical]`/`[High]`/`[Medium]`/`[Low]`) to
+hunt, plus data cross-checks and a role matrix. `/stlc-run` then executes this guide, captures
+screenshots **local-only** (`evidence/ui/passed/` vs `evidence/ui/issues/`), and a **hard
+visual-review gate** (human reviews the screens) precedes closure.

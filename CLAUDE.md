@@ -30,7 +30,7 @@ The `db`-fixture specs also need `CB_*` env vars and network access to CloudBeav
 - **Page objects:** put selectors/flows in page objects, not inline in specs (target state).
 
 ## House rules
-- **No screenshots.** Evidence is text/logs/Playwright **traces** only (team policy, hook-enforced).
+- **UI/visual verification for user-facing stories.** Screenshots are captured as evidence but kept **local only** (gitignored `evidence/ui/`, `passed/` vs `issues/`) — **never commit them**. Non-UI evidence is text/logs/Playwright **traces**.
 - **Secrets live in `.env`** (gitignored) — never hardcode credentials in specs or helpers.
 - **Test environment only.** Never point tests at production; use the seeded demo users.
 - **Parallel sessions.** We run several Claude Code sessions at once — do repo-mutating work

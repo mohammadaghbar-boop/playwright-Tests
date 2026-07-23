@@ -31,7 +31,7 @@ run individually (`/stlc-<name> JF-123`) or chained end-to-end by the
 | — | `/stlc-pattern-harvest` | Meta/continuous: extract reusable testing patterns from past testing chats into a library the orchestrator + judgment phases consult (esp. high-complexity stories) | |
 
 ## House rules baked into every skill
-- **No screenshots.** Evidence is text/logs/Playwright traces only (team policy, hook-enforced).
+- **UI / visual verification for user-facing stories.** Screenshots are captured and count as evidence — stored **locally only** (gitignored `evidence/ui/`, split `passed/` vs `issues/`), **never committed**. Non-UI evidence is text/logs/Playwright traces. A hard visual-review gate precedes closure.
 - **Human gates are explicit.** Anything that writes to Jira/AIO or pushes code is
   `disable-model-invocation` — it only runs when you invoke it, never auto-triggered.
 - **Parallel-session safe.** We run up to ~3 Claude Code sessions at once, so any

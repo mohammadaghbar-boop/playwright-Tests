@@ -60,6 +60,6 @@ git worktree remove ../pw-stlc-test
 ```
 
 ## Notes
-- **No screenshots** (team policy) — evidence is text/logs/traces.
+- **UI stories require visual verification** — screenshots are evidence, stored **locally only** (gitignored, never committed); non-UI evidence is text/logs/traces.
 - If `/stlc-…` doesn't autocomplete: you're not in a repo that has `.claude/skills/` (wrong
   folder/branch), or trust wasn't accepted — re-open in `../pw-stlc-test`.
